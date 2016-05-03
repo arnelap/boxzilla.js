@@ -51,7 +51,7 @@ The following configuration values are accepted as the second argument for the `
     'position': 'bottom-left',  // "center", "bottom-right", "top-left", etc.
     'testMode': false,          // boolean
     'trigger': {                // false or object
-        'method': 'percentage',       // "time", "element" or "percentage"
+        'method': 'percentage',       // "time_on_site", "time_on_page", "element" or "percentage"
         'value':   65                 // integer or string selector
     },
     'unclosable': false,        // boolean

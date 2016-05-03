@@ -45,8 +45,24 @@ function onKeyUp(e) {
     }
 }
 
+function checkTimeCriteria() {
+    var start = sessionStorage.getItem('boxzilla_start_time');
+    var now = Date.now();
+    var timeOnSite = ( now - start ) / 1000;
+
+    each(boxes, function(box) {
+        if( ! box.mayAutoShow() || box.config.trigger.method !== 'time_on_site' ) {
+            return;
+        }
+
+        if( timeOnSite > box.config.trigger.value ) {
+            box.trigger();
+        }
+    });
+}
+
 // check triggerHeight criteria for all boxes
-function checkBoxCriterias() {
+function checkHeightCriteria() {
     var scrollY = window.scrollY;
     var scrollHeight = scrollY + ( windowHeight * 0.9 );
 
@@ -95,11 +111,16 @@ Boxzilla.init = function() {
     document.body.appendChild(overlay);
 
     // event binds
-    $(window).bind('scroll', throttle(checkBoxCriterias));
+    $(window).bind('scroll', throttle(checkHeightCriteria));
     $(window).bind('resize', throttle(recalculateHeights));
     $(window).bind('load', recalculateHeights );
     $(document).keyup(onKeyUp);
     $(overlay).click(onOverlayClick);
+    window.setInterval(checkTimeCriteria, 1000);
+
+    if(! sessionStorage.getItem('boxzilla_start_time')) {
+        sessionStorage.setItem('boxzilla_start_time', Date.now());
+    }
 
     Boxzilla.trigger('ready');
 };
