@@ -288,6 +288,14 @@ Box.prototype.locationHashRefersBox = function() {
     return false;
 };
 
+Box.prototype.fits = function() {
+    if( this.config.minimumScreenWidth <= 0 ) {
+        return true;
+    }
+
+    return window.innerWidth > this.config.minimumScreenWidth
+};
+
 // is this box enabled?
 Box.prototype.mayAutoShow = function() {
 
@@ -297,7 +305,7 @@ Box.prototype.mayAutoShow = function() {
     }
 
     // check if box fits on given minimum screen width
-    if( this.config.minimumScreenWidth > 0 && window.innerWidth < this.config.minimumScreenWidth ) {
+    if( ! this.fits() ) {
         return false;
     }
 
