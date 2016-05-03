@@ -14,7 +14,7 @@
     "slide-in"
   ],
   "author": "Danny van Kooten <hi@dvk.co>",
-  "license": "GPLv2",
+  "license": "GPL-2.0",
   "bugs": {
     "url": "https://github.com/ibericode/boxzilla.js/issues"
   },
