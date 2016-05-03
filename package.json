@@ -1,0 +1,34 @@
+{
+  "name": "boxzilla.js",
+  "version": "0.1.0",
+  "description": "https://github.com/ibericode/boxzilla.js",
+  "main": "./dist/boxzilla.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ibericode/boxzilla.js"
+  },
+  "keywords": [
+    "jquery",
+    "pop-up",
+    "modal",
+    "slide-in"
+  ],
+  "author": "Danny van Kooten <hi@dvk.co>",
+  "license": "GPLv2",
+  "bugs": {
+    "url": "https://github.com/ibericode/boxzilla.js/issues"
+  },
+  "homepage": "https://github.com/ibericode/boxzilla.js",
+  "dependencies": {
+    "wolfy87-eventemitter": "^4.3.0"
+  },
+  "devDependencies": {
+    "browserify": "^12.0.1",
+    "gulp": "^3.9.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-uglify": "^1.5.2",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
+  }
+}
