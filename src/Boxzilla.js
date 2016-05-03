@@ -118,9 +118,17 @@ Boxzilla.init = function() {
     Boxzilla.trigger('ready');
 };
 
-// create a Box object from the DOM
+/**
+ * Create a new Box
+ *
+ * @param string id
+ * @param object opts
+ *
+ * @returns Box
+ */
 Boxzilla.create = function(id, opts) {
-    boxes[id] = new Box(id, opts, this);
+    boxes[id] = new Box(id, opts);
+    return boxes[id];
 };
 
 // dismiss a single box (or all by omitting id param)
