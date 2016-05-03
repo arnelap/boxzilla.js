@@ -10,7 +10,7 @@ var $ = window.jQuery,
         'minimumScreenWidth': 0,
         'position': 'bottom-left',
         'testMode': false,
-        'trigger': 'element',
+        'trigger': false,
         'unclosable': false,
         'css': {}
     }, Boxzilla;
@@ -46,10 +46,10 @@ var Box = function( id, config ) {
     this.triggerHeight = 0;
     this.cookieSet = false;
 
-    // if a trigger was given, calculate some values which might otherwise be expensive)
+    // if a trigger was given, calculate values once and store
     if( this.config.trigger ) {
-        if( this.config.trigger === 'percentage' || this.config.trigger === 'element' ) {
-            this.triggerHeight = this.calculateTriggerHeight( config.triggerPercentage, config.triggerElementSelector );
+        if( this.config.trigger.method === 'percentage' || this.config.trigger.method === 'element' ) {
+            this.triggerHeight = this.calculateTriggerHeight();
         }
 
         this.cookieSet = this.isCookieSet();
@@ -89,14 +89,13 @@ Box.prototype.events = function() {
     });
 
     // maybe show box right away
-    if( this.fits() ) {
-        if( this.config.trigger === "instant" && ! this.cookieSet ) {
-            $(window).load(this.show.bind(this));
-        } else if( this.locationHashRefersBox() ) {
-            // auto-show the box if box is referenced from URL
-            $(window).load(this.show.bind(this));
-        }
+    if( this.config.trigger.method === "time" && this.mayAutoShow() ) {
+        window.setTimeout(this.trigger.bind(this), this.config.trigger.value * 1000 );
+        // auto-show the box if box is referenced from URL
+    } else if( this.fits() && this.locationHashRefersBox() ) {
+        $(window).load(this.show.bind(this));
     }
+
 };
 
 Box.prototype.css = function() {
@@ -243,21 +242,17 @@ Box.prototype.hide = function() {
 };
 
 // calculate trigger height
-Box.prototype.calculateTriggerHeight = function( triggerPercentage, triggerElementSelector ) {
+Box.prototype.calculateTriggerHeight = function() {
+    var triggerHeight = 0;
 
-    if( this.config.trigger === 'element' ) {
-        var $triggerElement = $(triggerElementSelector).first();
-        if( $triggerElement.length > 0 ) {
-            // return top offset of element
-            return $triggerElement.offset().top;
-        } else {
-            // element was not found, disable box.
-            return 0;
-        }
+    if( this.config.trigger.method === 'element' ) {
+        var $triggerElement = $(this.config.trigger.value).first();
+        triggerHeight = ( $triggerElement.length > 0 ) ? $triggerElement.offset().top : 0;
+    } else if( this.config.trigger.method === 'percentage' ) {
+        triggerHeight = ( this.config.trigger.value / 100 * $(document).height() );
     }
 
-    // calcate % of page height
-    return ( triggerPercentage / 100 * $(document).height() );
+    return triggerHeight;
 };
 
 // set cookie that disables automatically showing the box
@@ -311,7 +306,7 @@ Box.prototype.mayAutoShow = function() {
     }
 
     // if trigger empty or error in calculating triggerHeight, return false
-    if( ! this.config.trigger || this.triggerHeight <= 0 ) {
+    if( ! this.config.trigger ) {
         return false;
     }
 
@@ -330,7 +325,7 @@ Box.prototype.isCookieSet = function() {
     }
 
     // check for cookie
-    if( this.config.cookieTime === 0 ) {
+    if( ! this.config.cookieTime ) {
         return false;
     }
 

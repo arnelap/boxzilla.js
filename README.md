@@ -41,15 +41,17 @@ The following configuration values are accepted as the second argument for the `
 ```js
 {
     'animation': 'fade',        // "fade" or "slide"
-    'autoHide': false,          // boolean
-    'autoShow': true,           // boolean
+    'rehide': false,            // boolean, whether box should rehide when certain triggers are no longer met.
     'content': '',              // "Any string"
     'cookieTime': 0,            // integer, number of days a box should be hidden when dismissed
     'icon': '&times',           // string, close icon character
     'minimumScreenWidth': 0,    // integer, box won't show on screens smaller than this
     'position': 'bottom-left',  // "center", "bottom-right", "top-left", etc.
     'testMode': false,          // boolean
-    'trigger': 'element',       // "element" or "percentage"
+    'trigger': {                // false or object
+        method: 'percentage',       // "time", "element" or "percentage"
+        value:   65                 // integer or string selector
+    },
     'unclosable': false,        // boolean
     'css': {}                   // object
 }
@@ -72,6 +74,7 @@ Boxzilla.on('box.show', callback);
 Event listeners can be added or removed using `Boxzilla.on` and `Boxzilla.off`. For a full list of event methods, check the [Event Emitter API](https://github.com/Olical/EventEmitter/blob/master/docs/api.md).
 
 ```js
+ready
 box.show
 box.hide
 box.dismiss

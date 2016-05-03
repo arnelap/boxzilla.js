@@ -45,13 +45,13 @@ function onKeyUp(e) {
     }
 }
 
-// check criteria for all registered boxes
+// check triggerHeight criteria for all boxes
 function checkBoxCriterias() {
     var scrollY = window.scrollY;
     var scrollHeight = scrollY + ( windowHeight * 0.9 );
 
     each(boxes, function(box) {
-        if( ! box.mayAutoShow() ) {
+        if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
             return;
         }
 
