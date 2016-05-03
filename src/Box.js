@@ -88,11 +88,12 @@ Box.prototype.events = function() {
         return false;
     });
 
-    if( this.config.autoShow && this.config.trigger === 'instant' && ! this.cookieSet ) {
-        $(window).load(this.show.bind(this));
-    } else {
-        // auto-show the box if box is referenced from URL
-        if( this.locationHashRefersBox() ) {
+    // maybe show box right away
+    if( this.fits() ) {
+        if( this.config.trigger === "instant" && ! this.cookieSet ) {
+            $(window).load(this.show.bind(this));
+        } else if( this.locationHashRefersBox() ) {
+            // auto-show the box if box is referenced from URL
             $(window).load(this.show.bind(this));
         }
     }
