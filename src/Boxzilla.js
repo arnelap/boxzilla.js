@@ -34,7 +34,7 @@ function throttle(fn, threshhold, scope) {
 // "keyup" listener
 function onKeyUp(e) {
     if (e.keyCode == 27) {
-        dismissAllBoxes();
+        Boxzilla.dismiss();
     }
 }
 
