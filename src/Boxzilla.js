@@ -8,6 +8,13 @@ var $ = window.jQuery,
     windowHeight = window.innerHeight,
     overlay = document.createElement('div');
 
+function each( obj, callback ) {
+    for( var key in obj ) {
+        if(! obj.hasOwnProperty(key)) continue;
+        callback(obj[key]);
+    }
+}
+
 function throttle(fn, threshhold, scope) {
     threshhold || (threshhold = 250);
     var last,
@@ -39,44 +46,31 @@ function onKeyUp(e) {
 }
 
 // check criteria for all registered boxes
-// todo: refactor part of this into box object?
 function checkBoxCriterias() {
-
     var scrollY = window.scrollY;
     var scrollHeight = scrollY + ( windowHeight * 0.9 );
 
-    for( var boxId in boxes ) {
-        var box = boxes[boxId];
 
+    each(boxes, function(box) {
         if( ! box.mayAutoShow() ) {
-            continue;
-        }
-
-        if( box.triggerHeight <= 0 ) {
-            continue;
+            return;
         }
 
         if( scrollHeight > box.triggerHeight ) {
-            if( ! box.visible ) {
-                box.show();
-                box.triggered = true;
-            }
+            box.trigger();
         } else if( box.mayAutoHide() ) {
-            if( box.visible ) {
-                box.hide();
-            }
+            box.hide();
         }
-    }
+    });
 }
 
 // recalculate heights and variables based on height
 function recalculateHeights() {
     windowHeight = window.innerHeight;
 
-    for( var boxId in boxes ) {
-        var box = boxes[boxId];
+    each(boxes, function(box) {
         box.setCustomBoxStyling();
-    }
+    });
 }
 
 function onOverlayClick(e) {
@@ -84,8 +78,7 @@ function onOverlayClick(e) {
     var y = e.offsetY;
 
     // calculate if click was near a box to avoid closing it (click error margin)
-    for(var boxId in boxes ) {
-        var box = boxes[boxId];
+    each(boxes, function(box) {
         var rect = box.element.getBoundingClientRect();
         var margin = 100 + ( window.innerWidth * 0.05 );
 
@@ -93,10 +86,8 @@ function onOverlayClick(e) {
         if( x < ( rect.left - margin ) || x > ( rect.right + margin ) || y < ( rect.top - margin ) || y > ( rect.bottom + margin ) ) {
             box.dismiss();
         }
-    }
+    });
 }
-
-var Boxzilla = Object.create(EventEmitter.prototype);
 
 // initialise & add event listeners
 Boxzilla.init = function() {
@@ -131,7 +122,7 @@ Boxzilla.create = function(id, opts) {
 Boxzilla.dismiss = function(id) {
     // if no id given, dismiss all current open boxes
     if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.dismiss(); });
+        each(boxes, function(box) { box.dismiss(); });
     } else if( typeof( boxes[id] ) === "object" ) {
         boxes[id].dismiss();
     }
@@ -139,7 +130,7 @@ Boxzilla.dismiss = function(id) {
 
 Boxzilla.hide = function(id) {
     if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.hide() });
+        each(boxes, function(box) { box.hide(); });
     } else if( typeof( boxes[id] ) === "object" ) {
         boxes[id].hide();
     }
@@ -147,7 +138,7 @@ Boxzilla.hide = function(id) {
 
 Boxzilla.show = function(id) {
     if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.show() });
+        each(boxes, function(box) { box.show(); });
     } else if( typeof( boxes[id] ) === "object" ) {
         boxes[id].show();
     }
@@ -155,7 +146,7 @@ Boxzilla.show = function(id) {
 
 Boxzilla.toggle = function(id) {
     if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.toggle() });
+        each(boxes, function(box) { box.toggle(); });
     } else if( typeof( boxes[id] ) === "object" ) {
         boxes[id].toggle();
     }
