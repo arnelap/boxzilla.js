@@ -50,7 +50,6 @@ function checkBoxCriterias() {
     var scrollY = window.scrollY;
     var scrollHeight = scrollY + ( windowHeight * 0.9 );
 
-
     each(boxes, function(box) {
         if( ! box.mayAutoShow() ) {
             return;
@@ -58,7 +57,7 @@ function checkBoxCriterias() {
 
         if( scrollHeight > box.triggerHeight ) {
             box.trigger();
-        } else if( box.mayAutoHide() ) {
+        } else if( box.mayRehide() ) {
             box.hide();
         }
     });
