@@ -21,8 +21,10 @@ Then, call the `init` method on `Boxzilla` and create your boxes.
 Boxzilla.init();
 Boxzilla.create( 'my-box', {
     content: "Well hello there.",
-    trigger: "percentage",
-    triggerPercentage: 50,
+    trigger: {
+        method: 'percentage',
+        value: 50
+    },
     position: "center"
 });
 </script>
@@ -49,8 +51,8 @@ The following configuration values are accepted as the second argument for the `
     'position': 'bottom-left',  // "center", "bottom-right", "top-left", etc.
     'testMode': false,          // boolean
     'trigger': {                // false or object
-        method: 'percentage',       // "time", "element" or "percentage"
-        value:   65                 // integer or string selector
+        'method': 'percentage',       // "time", "element" or "percentage"
+        'value':   65                 // integer or string selector
     },
     'unclosable': false,        // boolean
     'css': {}                   // object
