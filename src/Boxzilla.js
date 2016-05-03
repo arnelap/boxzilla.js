@@ -4,7 +4,6 @@ var $ = window.jQuery,
     Box = require('./Box.js'),
     EventEmitter = require('wolfy87-eventemitter'),
     boxes = {},
-    inited = false,
     windowHeight = window.innerHeight,
     overlay = document.createElement('div');
 
@@ -100,9 +99,6 @@ var Boxzilla = Object.create(EventEmitter.prototype);
 
 // initialise & add event listeners
 Boxzilla.init = function() {
-    // make sure we only init once
-    if( inited ) return;
-
     // add overlay element to dom
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
@@ -114,7 +110,6 @@ Boxzilla.init = function() {
     $(document).keyup(onKeyUp);
     $(overlay).click(onOverlayClick);
 
-    inited = true;
     Boxzilla.trigger('ready');
 };
 
