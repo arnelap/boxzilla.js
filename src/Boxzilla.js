@@ -6,7 +6,9 @@ var $ = window.jQuery,
     Box = require('./Box.js')(Boxzilla),
     boxes = {},
     windowHeight = window.innerHeight,
-    overlay = document.createElement('div');
+    overlay = document.createElement('div'),
+    exitIntentDelayTimer,
+    exitIntentTriggered;
 
 function each( obj, callback ) {
     for( var key in obj ) {
@@ -104,6 +106,32 @@ function onOverlayClick(e) {
     });
 }
 
+function triggerExitIntent() {
+    if(exitIntentTriggered) return;
+
+    each(boxes, function(box) {
+        if(box.mayAutoShow() && box.config.trigger.method === 'exit-intent' ) {
+            box.trigger();
+        }
+    });
+
+    exitIntentTriggered = true;
+}
+
+function onMouseLeave(e) {
+    // did mouse leave at top of window?
+    if( e.clientY < 0 ) {
+        exitIntentDelayTimer = window.setTimeout(triggerExitIntent, 1000);
+    }
+}
+
+function onMouseEnter() {
+    if( exitIntentDelayTimer ) {
+        window.clearInterval(exitIntentDelayTimer);
+        exitIntentDelayTimer = null;
+    }
+}
+
 // initialise & add event listeners
 Boxzilla.init = function() {
     // add overlay element to dom
@@ -111,9 +139,11 @@ Boxzilla.init = function() {
     document.body.appendChild(overlay);
 
     // event binds
-    $(window).bind('scroll', throttle(checkHeightCriteria));
-    $(window).bind('resize', throttle(recalculateHeights));
-    $(window).bind('load', recalculateHeights );
+    $(window).on('scroll', throttle(checkHeightCriteria));
+    $(window).on('resize', throttle(recalculateHeights));
+    $(window).on('load', recalculateHeights );
+    $(document).on('mouseleave', onMouseLeave);
+    $(document).on('mouseenter', onMouseEnter);
     $(document).keyup(onKeyUp);
     $(overlay).click(onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);

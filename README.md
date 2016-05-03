@@ -45,7 +45,7 @@ The following configuration values are accepted as the second argument for the `
 {
     'content': '',              // "Any string"
     'trigger': {                // false or object
-        'method': 'percentage',       // "time_on_site", "time_on_page", "element" or "percentage"
+        'method': 'percentage',       // "time_on_site", "time_on_page", "exit-intent", "element" or "percentage"
         'value':   65                 // integer or string selector
     },
     'icon': '&times',           // string, close icon character
