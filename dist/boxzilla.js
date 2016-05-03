@@ -679,6 +679,11 @@ Box.prototype.toggle = function(show) {
         return false;
     }
 
+    // if box should be hidden but is unclosable, bail.
+    if( ! show && this.config.unclosable ) {
+        return false;
+    }
+
     // set new visibility status
     this.visible = show;
 
@@ -868,7 +873,7 @@ function init() {
     // event binds
     $(window).bind('scroll', throttle(checkBoxCriterias));
     $(window).bind('resize', throttle(recalculateHeights));
-    $(window).bind('load', onLoad );
+    $(window).bind('load', recalculateHeights );
     $(document).keyup(onKeyUp);
     $(overlay).click(onOverlayClick);
 
@@ -877,49 +882,14 @@ function init() {
 }
 
 // create a Box object from the DOM
-function createBox(id, opts) {
+function create(id, opts) {
     boxes[id] = new Box(id, opts, events);
-}
-
-// "window.load" listener
-function onLoad() {
-    recalculateHeights();
 }
 
 // "keyup" listener
 function onKeyUp(e) {
     if (e.keyCode == 27) {
         dismissAllBoxes();
-    }
-}
-
-// hide and disable all registered boxes
-function dismissAllBoxes() {
-    for( var boxId in boxes ) {
-        var box = boxes[boxId];
-        if( box.visible && ! box.config.unclosable ) {
-            box.dismiss();
-        }
-    }
-}
-
-// show all registered boxes
-function showAllBoxes() {
-    for( var boxId in boxes ) {
-        var box = boxes[boxId];
-        if( ! box.visible ) {
-            box.show();
-        }
-    }
-}
-
-// hide all registered boxes
-function hideAllBoxes() {
-    for( var boxId in boxes ) {
-        var box = boxes[boxId];
-        if( box.visible ) {
-            box.hide();
-        }
     }
 }
 
@@ -968,20 +938,24 @@ function recalculateHeights() {
 function dismiss(id) {
     // if no id given, dismiss all current open boxes
     if( typeof(id) === "undefined" ) {
-        dismissAllBoxes();
+        boxes.forEach(function(box) { box.dismiss(); });
     } else if( typeof( boxes[id] ) === "object" ) {
         boxes[id].dismiss();
     }
 }
 
-function hideBox(id) {
-    if( typeof( boxes[id] ) === "object" ) {
+function hide(id) {
+    if( typeof(id) === "undefined" ) {
+        boxes.forEach(function(box) { box.hide() });
+    } else if( typeof( boxes[id] ) === "object" ) {
         boxes[id].hide();
     }
 }
 
-function showBox(id) {
-    if( typeof( boxes[id] ) === "object" ) {
+function show(id) {
+    if( typeof(id) === "undefined" ) {
+        boxes.forEach(function(box) { box.show() });
+    } else if( typeof( boxes[id] ) === "object" ) {
         boxes[id].show();
     }
 }
@@ -999,8 +973,6 @@ function onOverlayClick(e) {
     // calculate if click was near a box to avoid closing it (click error margin)
     for(var boxId in boxes ) {
         var box = boxes[boxId];
-        if( ! box.visible || box.config.unclosable ) { continue; }
-
         var rect = box.element.getBoundingClientRect();
         var margin = 100 + ( window.innerWidth * 0.05 );
 
@@ -1014,14 +986,15 @@ function onOverlayClick(e) {
 // expose a simple API to control all registered boxes
 var api = {
     'init': init,
-    'createBox': createBox,
+    'create': create,
     'boxes': boxes,
-    'showBox': showBox,
-    'hideBox': hideBox,
+    'showBox': show,
+    'hideBox': hide,
     'toggleBox': toggleBox,
-    'dismiss': dismiss,
-    'events': events
+    'dismiss': dismiss
 };
+
+api.prototype = Object.create(events);
 
 if ( typeof module !== 'undefined' && module.exports ) {
     module.exports = api;

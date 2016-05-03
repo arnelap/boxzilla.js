@@ -202,6 +202,11 @@ Box.prototype.toggle = function(show) {
         return false;
     }
 
+    // if box should be hidden but is unclosable, bail.
+    if( ! show && this.config.unclosable ) {
+        return false;
+    }
+
     // set new visibility status
     this.visible = show;
 
