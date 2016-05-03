@@ -41,12 +41,23 @@ The following configuration values are accepted.
     'cookieTime': 0,            // integer, number of days a box should be hidden when dismissed
     'icon': '&times',           // string, close icon character
     'minimumScreenWidth': 0,    // integer, box won't show on screens smaller than this
-    'position': 'bottom-left',  "center", "bottom-right", "top-left", etc.
+    'position': 'bottom-left',  // "center", "bottom-right", "top-left", etc.
     'testMode': false,          // boolean
     'trigger': 'element',       // "element" or "percentage"
     'unclosable': false,        // boolean
     'css': {}                   // object
 }
+```
+
+### Managing boxes
+
+The `Boxzilla` object exposes the following methods.
+
+```js
+Boxzilla.showBox( 'my-box' );
+Boxzilla.hideBox( 'my-box' );
+Boxzilla.dismiss();
+Boxzilla.events.on('box.show', callback);
 ```
 
 ### License
