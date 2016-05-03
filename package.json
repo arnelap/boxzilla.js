@@ -1,7 +1,7 @@
 {
-  "name": "boxzilla.js",
+  "name": "boxzilla",
   "version": "0.1.0",
-  "description": "https://github.com/ibericode/boxzilla.js",
+  "description": "Pop-up or slide-in boxes.",
   "main": "./dist/boxzilla.js",
   "repository": {
     "type": "git",
