@@ -12,6 +12,7 @@ First, include the script in your webpage. Make sure jQuery is loaded as well.
 ```html
 <script src="/jquery.js"></script>
 <script src="/boxzilla.js"></script>
+<link rel="stylesheet" href="/boxzilla.css" />
 ```
 
 Then, call the `init` method on `Boxzilla` and create your boxes.
@@ -30,7 +31,7 @@ Boxzilla.create( 'my-box', {
 </script>
 ```
 
-Alternatively, you can load Boxzilla using Browserify.
+Alternatively, you can load Boxzilla using [Browserify](http://browserify.org/).
 
 ```js
 var Boxzilla = require('boxzilla');
@@ -38,26 +39,44 @@ var Boxzilla = require('boxzilla');
 
 ### Config
 
-The following configuration values are accepted as the second argument for the `create` method.
+The following configuration values are accepted as the second argument for the `Boxzilla.create` method.
 
 ```js
 {
-    'animation': 'fade',        // "fade" or "slide"
-    'rehide': false,            // boolean, whether box should rehide when certain triggers are no longer met.
     'content': '',              // "Any string"
-    'cookieTime': 0,            // integer, number of days a box should be hidden when dismissed
-    'icon': '&times',           // string, close icon character
-    'minimumScreenWidth': 0,    // integer, box won't show on screens smaller than this
-    'position': 'bottom-left',  // "center", "bottom-right", "top-left", etc.
-    'testMode': false,          // boolean
     'trigger': {                // false or object
         'method': 'percentage',       // "time_on_site", "time_on_page", "element" or "percentage"
         'value':   65                 // integer or string selector
     },
+    'icon': '&times',           // string, close icon character
+    'animation': 'fade',        // "fade" or "slide"
+    'cookieTime': 0,            // integer, number of days a box should be hidden when dismissed
+    'minimumScreenWidth': 0,    // integer, box won't show on screens smaller than this
+    'rehide': false,            // boolean, whether box should rehide when certain triggers are no longer met.
+    'position': 'center',  // "center", "bottom-right", "top-left", etc.
+    'testMode': false,          // boolean
     'unclosable': false,        // boolean
     'css': {}                   // object
 }
 ```
+
+_Example_
+
+```js
+Boxzilla.create( 'foo', {
+    'animation': 'slide',
+    'content': form.innerHTML,
+    'trigger': {
+        'method': 'time_on_site',
+        'value': 120
+    },
+    'minimumScreenWidth': 600,
+    'icon': '<i class="fa fa-cross"></i>',
+    'position': 'center',
+});
+```
+
+
 
 ### Managing boxes
 
