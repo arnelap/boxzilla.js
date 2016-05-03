@@ -110,7 +110,7 @@ function triggerExitIntent() {
     if(exitIntentTriggered) return;
 
     each(boxes, function(box) {
-        if(box.mayAutoShow() && box.config.trigger.method === 'exit-intent' ) {
+        if(box.mayAutoShow() && box.config.trigger.method === 'exit_intent' ) {
             box.trigger();
         }
     });
