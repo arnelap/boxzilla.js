@@ -6,8 +6,7 @@ var $ = window.jQuery,
     boxes = {},
     inited = false,
     windowHeight = window.innerHeight,
-    overlay = document.createElement('div'),
-    events = new EventEmitter;
+    overlay = document.createElement('div');
 
 function throttle(fn, threshhold, scope) {
     threshhold || (threshhold = 250);
@@ -30,31 +29,6 @@ function throttle(fn, threshhold, scope) {
             fn.apply(context, args);
         }
     };
-}
-
-// initialise & add event listeners
-function init() {
-    // make sure we only init once
-    if( inited ) return;
-
-    // add overlay element to dom
-    overlay.id = 'boxzilla-overlay';
-    document.body.appendChild(overlay);
-
-    // event binds
-    $(window).bind('scroll', throttle(checkBoxCriterias));
-    $(window).bind('resize', throttle(recalculateHeights));
-    $(window).bind('load', recalculateHeights );
-    $(document).keyup(onKeyUp);
-    $(overlay).click(onOverlayClick);
-
-    inited = true;
-    events.trigger('ready');
-}
-
-// create a Box object from the DOM
-function create(id, opts) {
-    boxes[id] = new Box(id, opts, events);
 }
 
 // "keyup" listener
@@ -105,38 +79,6 @@ function recalculateHeights() {
     }
 }
 
-// dismiss a single box (or all by omitting id param)
-function dismiss(id) {
-    // if no id given, dismiss all current open boxes
-    if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.dismiss(); });
-    } else if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].dismiss();
-    }
-}
-
-function hide(id) {
-    if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.hide() });
-    } else if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].hide();
-    }
-}
-
-function show(id) {
-    if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.show() });
-    } else if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].show();
-    }
-}
-
-function toggleBox(id) {
-    if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].toggle();
-    }
-}
-
 function onOverlayClick(e) {
     var x = e.offsetX;
     var y = e.offsetY;
@@ -154,21 +96,69 @@ function onOverlayClick(e) {
     }
 }
 
-// expose a simple API to control all registered boxes
-var api = {
-    'init': init,
-    'create': create,
-    'boxes': boxes,
-    'showBox': show,
-    'hideBox': hide,
-    'toggleBox': toggleBox,
-    'dismiss': dismiss
+var Boxzilla = Object.create(EventEmitter.prototype);
+
+// initialise & add event listeners
+Boxzilla.init = function() {
+    // make sure we only init once
+    if( inited ) return;
+
+    // add overlay element to dom
+    overlay.id = 'boxzilla-overlay';
+    document.body.appendChild(overlay);
+
+    // event binds
+    $(window).bind('scroll', throttle(checkBoxCriterias));
+    $(window).bind('resize', throttle(recalculateHeights));
+    $(window).bind('load', recalculateHeights );
+    $(document).keyup(onKeyUp);
+    $(overlay).click(onOverlayClick);
+
+    inited = true;
+    Boxzilla.trigger('ready');
 };
 
-api.prototype = Object.create(events);
+// create a Box object from the DOM
+Boxzilla.create = function(id, opts) {
+    boxes[id] = new Box(id, opts, this);
+};
+
+// dismiss a single box (or all by omitting id param)
+Boxzilla.dismiss = function(id) {
+    // if no id given, dismiss all current open boxes
+    if( typeof(id) === "undefined" ) {
+        boxes.forEach(function(box) { box.dismiss(); });
+    } else if( typeof( boxes[id] ) === "object" ) {
+        boxes[id].dismiss();
+    }
+};
+
+Boxzilla.hide = function(id) {
+    if( typeof(id) === "undefined" ) {
+        boxes.forEach(function(box) { box.hide() });
+    } else if( typeof( boxes[id] ) === "object" ) {
+        boxes[id].hide();
+    }
+};
+
+Boxzilla.show = function(id) {
+    if( typeof(id) === "undefined" ) {
+        boxes.forEach(function(box) { box.show() });
+    } else if( typeof( boxes[id] ) === "object" ) {
+        boxes[id].show();
+    }
+};
+
+Boxzilla.toggle = function(id) {
+    if( typeof(id) === "undefined" ) {
+        boxes.forEach(function(box) { box.toggle() });
+    } else if( typeof( boxes[id] ) === "object" ) {
+        boxes[id].toggle();
+    }
+};
 
 if ( typeof module !== 'undefined' && module.exports ) {
-    module.exports = api;
+    module.exports = Boxzilla;
 } else {
-    this.Boxzilla = api;
+    this.Boxzilla = Boxzilla;
 }

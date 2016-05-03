@@ -10,8 +10,8 @@ This is the script powering the [Boxzilla plugin for WordPress](https://boxzilla
 First, include the script in your webpage. Make sure jQuery is loaded as well.
 
 ```html
-<script src="jquery.js"></script>
-<script src="boxzilla.js"></script>
+<script src="/jquery.js"></script>
+<script src="/boxzilla.js"></script>
 ```
 
 Then, call the `init` method on `Boxzilla` and create your boxes.
@@ -19,7 +19,7 @@ Then, call the `init` method on `Boxzilla` and create your boxes.
 ```html
 <script>
 Boxzilla.init();
-Boxzilla.createBox( 'my-box', {
+Boxzilla.create( 'my-box', {
     content: "Well hello there.",
     trigger: "percentage",
     triggerPercentage: 50,
@@ -28,9 +28,15 @@ Boxzilla.createBox( 'my-box', {
 </script>
 ```
 
+Alternatively, you can load Boxzilla using Browserify.
+
+```js
+var Boxzilla = require('boxzilla');
+```
+
 ### Config
 
-The following configuration values are accepted.
+The following configuration values are accepted as the second argument for the `create` method.
 
 ```js
 {
@@ -54,10 +60,29 @@ The following configuration values are accepted.
 The `Boxzilla` object exposes the following methods.
 
 ```js
-Boxzilla.showBox( 'my-box' );
-Boxzilla.hideBox( 'my-box' );
-Boxzilla.dismiss();
-Boxzilla.events.on('box.show', callback);
+Boxzilla.show('my-box');
+Boxzilla.hide('my-box');
+Boxzilla.dismiss();             // all boxes
+Boxzilla.dismiss('my-box');     // specific box
+Boxzilla.on('box.show', callback);
+```
+
+### Events
+
+Event listeners can be added or removed using `Boxzilla.on` and `Boxzilla.off`. For a full list of event methods, check the [Event Emitter API](https://github.com/Olical/EventEmitter/blob/master/docs/api.md).
+
+```js
+box.show
+box.hide
+box.dismiss
+```
+
+_Example Usage_
+
+```js
+Boxzilla.on('box.show', function(box) {
+    console.log("Showing box " + box.id);
+});
 ```
 
 ### License
