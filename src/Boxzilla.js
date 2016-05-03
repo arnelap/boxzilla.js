@@ -1,8 +1,9 @@
 'use strict';
 
 var $ = window.jQuery,
-    Box = require('./Box.js'),
     EventEmitter = require('wolfy87-eventemitter'),
+    Boxzilla = Object.create(EventEmitter.prototype),
+    Box = require('./Box.js')(Boxzilla),
     boxes = {},
     windowHeight = window.innerHeight,
     overlay = document.createElement('div');

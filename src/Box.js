@@ -14,7 +14,7 @@ var $ = window.jQuery,
         'trigger': 'element',
         'unclosable': false,
         'css': {}
-    };
+    }, Boxzilla;
 
 /**
  * Merge 2 objects, values of the latter overwriting the former.
@@ -31,12 +31,11 @@ function merge( obj1, obj2 ) {
 }
 
 // Box Object
-var Box = function( id, config, events ) {
+var Box = function( id, config ) {
     this.id 		= id;
 
     // store config values
     this.config = merge(defaults, config);
-    this.events = events;
 
     // store ref to overlay
     this.overlay = document.getElementById('boxzilla-overlay');
@@ -77,12 +76,12 @@ Box.prototype.init = function() {
     this.$element.find('.boxzilla-close-icon').click(box.dismiss.bind(this));
 
     this.$element.on('click', 'a', function(e) {
-        box.events.trigger('box.interactions.link', [ box, e.target ] );
+        Boxzilla.trigger('box.interactions.link', [ box, e.target ] );
     });
 
     this.$element.on('submit', 'form', function(e) {
         box.setCookie();
-        box.events.trigger('box.interactions.form', [ box, e.target ]);
+        Boxzilla.trigger('box.interactions.form', [ box, e.target ]);
     });
 
     // attach event to all links referring #boxzilla-{box_id}
@@ -219,7 +218,7 @@ Box.prototype.toggle = function(show) {
     }
 
     // trigger event
-    this.events.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
+    Boxzilla.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
 
     // show or hide box using selected animation
     if( this.config.animation === 'fade' ) {
@@ -294,18 +293,18 @@ Box.prototype.locationHashRefersBox = function() {
 // is this box enabled?
 Box.prototype.mayAutoShow = function() {
 
-    // don't show if autoShow is disabled
-    if( ! this.config.autoShow ) {
-        return false;
-    }
-
-    // don't show if box was closed before
+    // don't show if box was closed (dismissed) before
     if( this.closed ) {
         return false;
     }
 
     // check if box fits on given minimum screen width
     if( this.config.minimumScreenWidth > 0 && window.innerWidth < this.config.minimumScreenWidth ) {
+        return false;
+    }
+
+    // if trigger empty or error in calculating triggerHeight, return false
+    if( ! this.config.trigger || this.triggerHeight <= 0 ) {
         return false;
     }
 
@@ -340,12 +339,20 @@ Box.prototype.isCookieSet = function() {
 
 };
 
+Box.prototype.trigger = function() {
+    var shown = this.show();
+    if( shown ) this.triggered = true;
+};
+
 // disable the box
 Box.prototype.dismiss = function() {
     this.hide();
     this.setCookie();
     this.closed = true;
-    this.events.trigger('box.dismiss', [ this ]);
+    Boxzilla.trigger('box.dismiss', [ this ]);
 };
 
-module.exports = Box;
+module.exports = function(_Boxzilla) {
+    Boxzilla = _Boxzilla;
+    return Box;
+};
