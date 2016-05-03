@@ -480,8 +480,7 @@
 var $ = window.jQuery,
     defaults = {
         'animation': 'fade',
-        'autoHide': false,
-        'autoShow': true,
+        'rehide': false,
         'content': '',
         'cookieTime': 0,
         'icon': '&times',
@@ -525,8 +524,7 @@ var Box = function( id, config ) {
     this.cookieSet = false;
 
     // if a trigger was given, calculate some values which might otherwise be expensive)
-    if( this.config.autoShow && this.config.trigger !== '' ) {
-
+    if( this.config.trigger ) {
         if( this.config.trigger === 'percentage' || this.config.trigger === 'element' ) {
             this.triggerHeight = this.calculateTriggerHeight( config.triggerPercentage, config.triggerElementSelector );
         }
@@ -542,11 +540,11 @@ var Box = function( id, config ) {
     this.css();
 
     // further initialise the box
-    this.init();
+    this.events();
 };
 
 // initialise the box
-Box.prototype.init = function() {
+Box.prototype.events = function() {
     var box = this;
 
     // attach event to "close" icon inside box
@@ -567,11 +565,12 @@ Box.prototype.init = function() {
         return false;
     });
 
-    if( this.config.autoShow && this.config.trigger === 'instant' && ! this.cookieSet ) {
-        $(window).load(this.show.bind(this));
-    } else {
-        // auto-show the box if box is referenced from URL
-        if( this.locationHashRefersBox() ) {
+    // maybe show box right away
+    if( this.fits() ) {
+        if( this.config.trigger === "instant" && ! this.cookieSet ) {
+            $(window).load(this.show.bind(this));
+        } else if( this.locationHashRefersBox() ) {
+            // auto-show the box if box is referenced from URL
             $(window).load(this.show.bind(this));
         }
     }
@@ -767,6 +766,14 @@ Box.prototype.locationHashRefersBox = function() {
     return false;
 };
 
+Box.prototype.fits = function() {
+    if( this.config.minimumScreenWidth <= 0 ) {
+        return true;
+    }
+
+    return window.innerWidth > this.config.minimumScreenWidth
+};
+
 // is this box enabled?
 Box.prototype.mayAutoShow = function() {
 
@@ -776,7 +783,7 @@ Box.prototype.mayAutoShow = function() {
     }
 
     // check if box fits on given minimum screen width
-    if( this.config.minimumScreenWidth > 0 && window.innerWidth < this.config.minimumScreenWidth ) {
+    if( ! this.fits() ) {
         return false;
     }
 
@@ -789,15 +796,8 @@ Box.prototype.mayAutoShow = function() {
     return ! this.cookieSet;
 };
 
-Box.prototype.mayAutoHide = function() {
-
-    // check if autoHide was allowed from config
-    if( ! this.config.autoHide ) {
-        return false;
-    }
-
-    // only allow autoHide when box has been autoshown (triggered)
-    return this.triggered;
+Box.prototype.mayRehide = function() {
+    return this.config.rehide && this.triggered;
 };
 
 Box.prototype.isCookieSet = function() {
@@ -818,10 +818,11 @@ Box.prototype.isCookieSet = function() {
 
 Box.prototype.trigger = function() {
     var shown = this.show();
-    if( shown ) this.triggered = true;
+    if( shown ) {
+        this.triggered = true;
+    }
 };
 
-// disable the box
 Box.prototype.dismiss = function() {
     this.hide();
     this.setCookie();
@@ -886,7 +887,6 @@ function checkBoxCriterias() {
     var scrollY = window.scrollY;
     var scrollHeight = scrollY + ( windowHeight * 0.9 );
 
-
     each(boxes, function(box) {
         if( ! box.mayAutoShow() ) {
             return;
@@ -894,7 +894,7 @@ function checkBoxCriterias() {
 
         if( scrollHeight > box.triggerHeight ) {
             box.trigger();
-        } else if( box.mayAutoHide() ) {
+        } else if( box.mayRehide() ) {
             box.hide();
         }
     });
