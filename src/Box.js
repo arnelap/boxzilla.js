@@ -11,8 +11,7 @@ var $ = window.jQuery,
         'position': 'center',
         'testMode': false,
         'trigger': false,
-        'unclosable': false,
-        'css': {}
+        'unclosable': false
     }, Boxzilla;
 
 /**
@@ -59,9 +58,6 @@ var Box = function( id, config ) {
     this.element = this.dom();
     this.$element = $(this.element);
 
-    // setup custom styling
-    this.css();
-
     // further initialise the box
     this.events();
 };
@@ -96,35 +92,6 @@ Box.prototype.events = function() {
         $(window).load(this.show.bind(this));
     }
 
-};
-
-Box.prototype.css = function() {
-
-    var css = this.config.css;
-
-    if( css.background_color ) {
-        this.element.style.background = css.background_color;
-    }
-
-    if( css.color ) {
-        this.element.style.color = css.color;
-    }
-
-    if( css.border_color ) {
-        this.element.style.borderColor = css.border_color;
-    }
-
-    if( css.border_width ) {
-        this.element.style.borderWidth = parseInt(css.border_width) + "px";
-    }
-
-    if( css.border_style ) {
-        this.element.style.borderStyle = css.border_style;
-    }
-
-    if( css.width ) {
-        this.element.style.maxWidth = parseInt(css.width) + "px";
-    }
 };
 
 // generate dom elements for this box

@@ -55,8 +55,7 @@ The following configuration values are accepted as the second argument for the `
     'rehide': false,            // boolean, whether box should rehide when certain triggers are no longer met.
     'position': 'center',  // "center", "bottom-right", "top-left", etc.
     'testMode': false,          // boolean
-    'unclosable': false,        // boolean
-    'css': {}                   // object
+    'unclosable': false        // boolean
 }
 ```
 
