@@ -11,7 +11,7 @@ var $ = window.jQuery,
         'position': 'center',
         'testMode': false,
         'trigger': false,
-        'unclosable': false
+        'closable': true
     }, Boxzilla;
 
 /**
@@ -110,7 +110,7 @@ Box.prototype.dom = function() {
     content.innerHTML = this.config.content;
     box.appendChild(content);
 
-    if( ! this.config.unclosable && this.config.icon ) {
+    if( this.config.closable && this.config.icon ) {
         var icon = document.createElement('span');
         icon.className = "boxzilla-close-icon";
         icon.innerHTML = this.config.icon;
@@ -166,8 +166,8 @@ Box.prototype.toggle = function(show) {
         return false;
     }
 
-    // if box should be hidden but is unclosable, bail.
-    if( ! show && this.config.unclosable ) {
+    // if box should be hidden but is not closable, bail.
+    if( ! show && ! this.config.closable ) {
         return false;
     }
 

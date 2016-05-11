@@ -53,9 +53,9 @@ The following configuration values are accepted as the second argument for the `
     'cookieTime': 0,            // integer, number of days a box should be hidden when dismissed
     'minimumScreenWidth': 0,    // integer, box won't show on screens smaller than this
     'rehide': false,            // boolean, whether box should rehide when certain triggers are no longer met.
-    'position': 'center',  // "center", "bottom-right", "top-left", etc.
+    'position': 'center',       // "center", "bottom-right", "top-left", etc.
     'testMode': false,          // boolean
-    'unclosable': false        // boolean
+    'closable': true            // boolean
 }
 ```
 
