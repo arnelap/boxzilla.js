@@ -4,11 +4,14 @@ var $ = window.jQuery,
     EventEmitter = require('wolfy87-eventemitter'),
     Boxzilla = Object.create(EventEmitter.prototype),
     Box = require('./Box.js')(Boxzilla),
+    Timer = require('./Timer.js'),
     boxes = {},
     windowHeight = window.innerHeight,
     overlay = document.createElement('div'),
     exitIntentDelayTimer,
-    exitIntentTriggered;
+    exitIntentTriggered,
+    siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0),
+    pageTimer = new Timer(0);
 
 function each( obj, callback ) {
     for( var key in obj ) {
@@ -47,17 +50,21 @@ function onKeyUp(e) {
     }
 }
 
+// check time trigger criteria for each box
 function checkTimeCriteria() {
-    var start = sessionStorage.getItem('boxzilla_start_time');
-    var now = Date.now();
-    var timeOnSite = ( now - start ) / 1000;
-
     each(boxes, function(box) {
-        if( ! box.mayAutoShow() || box.config.trigger.method !== 'time_on_site' ) {
+
+        if( ! box.mayAutoShow() ) {
             return;
         }
 
-        if( timeOnSite > box.config.trigger.value ) {
+        // check "time on site" trigger
+        if (box.config.trigger.method === 'time_on_site' && siteTimer.time > box.config.trigger.value) {
+            box.trigger();
+        }
+
+        // check "time on page" trigger
+        if (box.config.trigger.method === 'time_on_page' && pageTimer.time > box.config.trigger.value) {
             box.trigger();
         }
     });
@@ -119,17 +126,10 @@ function triggerExitIntent() {
 }
 
 function onMouseLeave(e) {
-    var delay;
+    var delay = 400;
 
     // did mouse leave at top of window?
-    if( e.clientY < 0 ) {
-        delay = 800;
-
-        // shorten delay if mouse is leaving near a corner
-        if( e.clientX < 0.25 * window.innerWidth || e.clientX > 0.75 * window.innerWidth ) {
-            delay = 400;
-        }
-
+    if( e.clientY <= 0 ) {
         exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
     }
 }
@@ -141,8 +141,24 @@ function onMouseEnter() {
     }
 }
 
+var timers = {
+    start: function() {
+        var sessionTime = sessionStorage.getItem('boxzilla_timer');
+        if( sessionTime ) siteTimer.time = sessionTime;
+        siteTimer.start();
+        pageTimer.start();
+    },
+    stop: function() {
+        sessionStorage.setItem('boxzilla_timer', siteTimer.time);
+        siteTimer.stop();
+        pageTimer.stop();
+    }
+};
+
 // initialise & add event listeners
 Boxzilla.init = function() {
+    var html = document.documentElement;
+
     // add overlay element to dom
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
@@ -151,15 +167,16 @@ Boxzilla.init = function() {
     $(window).on('scroll', throttle(checkHeightCriteria));
     $(window).on('resize', throttle(recalculateHeights));
     $(window).on('load', recalculateHeights );
-    $(document).on('mouseleave', onMouseLeave);
-    $(document).on('mouseenter', onMouseEnter);
-    $(document).on('keyup', onKeyUp);
+    $(html).on('mouseleave', onMouseLeave);
+    $(html).on('mouseenter', onMouseEnter);
+    $(html).on('keyup', onKeyUp);
     $(overlay).click(onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
 
-    if(! sessionStorage.getItem('boxzilla_start_time')) {
-        sessionStorage.setItem('boxzilla_start_time', Date.now());
-    }
+    timers.start();
+    $(window).on('focus', timers.start);
+    $(window).on('beforeunload', timers.stop);
+    $(window).on('blur', timers.stop);
 
     Boxzilla.trigger('ready');
 };
