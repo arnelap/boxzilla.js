@@ -245,8 +245,8 @@ Boxzilla.toggle = function(id) {
     }
 };
 
+window.Boxzilla = Boxzilla;
+
 if ( typeof module !== 'undefined' && module.exports ) {
     module.exports = Boxzilla;
-} else {
-    this.Boxzilla = Boxzilla;
 }
