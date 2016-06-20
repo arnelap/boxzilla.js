@@ -488,7 +488,7 @@ var $ = window.jQuery,
         'position': 'center',
         'testMode': false,
         'trigger': false,
-        'unclosable': false
+        'closable': true
     }, Boxzilla;
 
 /**
@@ -562,10 +562,7 @@ Box.prototype.events = function() {
     });
 
     // maybe show box right away
-    if( this.config.trigger.method === "time_on_page" && this.mayAutoShow() ) {
-        window.setTimeout(this.trigger.bind(this), this.config.trigger.value * 1000 );
-        // auto-show the box if box is referenced from URL
-    } else if( this.fits() && this.locationHashRefersBox() ) {
+    if( this.fits() && this.locationHashRefersBox() ) {
         $(window).load(this.show.bind(this));
     }
 
@@ -573,7 +570,6 @@ Box.prototype.events = function() {
 
 // generate dom elements for this box
 Box.prototype.dom = function() {
-
     var wrapper = document.createElement('div');
     wrapper.className = 'boxzilla-container boxzilla-' + this.config.position + '-container';
 
@@ -587,7 +583,18 @@ Box.prototype.dom = function() {
     content.innerHTML = this.config.content;
     box.appendChild(content);
 
-    if( ! this.config.unclosable && this.config.icon ) {
+    // remove <script> from box content and append them to head
+    var scripts = content.querySelectorAll('script');
+    if(scripts.length) {
+        var script = document.createElement('script');
+        for( var i=0; i<scripts.length; i++ ) {
+            script.appendChild(document.createTextNode(scripts[i].text));
+            scripts[i].parentNode.removeChild(scripts[i]);
+        }
+        document.head.appendChild(script);
+    }
+
+    if( this.config.closable && this.config.icon ) {
         var icon = document.createElement('span');
         icon.className = "boxzilla-close-icon";
         icon.innerHTML = this.config.icon;
@@ -643,8 +650,8 @@ Box.prototype.toggle = function(show) {
         return false;
     }
 
-    // if box should be hidden but is unclosable, bail.
-    if( ! show && this.config.unclosable ) {
+    // if box should be hidden but is not closable, bail.
+    if( ! show && ! this.config.closable ) {
         return false;
     }
 
@@ -803,11 +810,15 @@ var $ = window.jQuery,
     EventEmitter = require('wolfy87-eventemitter'),
     Boxzilla = Object.create(EventEmitter.prototype),
     Box = require('./Box.js')(Boxzilla),
+    Timer = require('./Timer.js'),
     boxes = {},
     windowHeight = window.innerHeight,
     overlay = document.createElement('div'),
     exitIntentDelayTimer,
-    exitIntentTriggered;
+    exitIntentTriggered,
+    siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0),
+    pageTimer = new Timer(0),
+    pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
 
 function each( obj, callback ) {
     for( var key in obj ) {
@@ -846,17 +857,33 @@ function onKeyUp(e) {
     }
 }
 
-function checkTimeCriteria() {
-    var start = sessionStorage.getItem('boxzilla_start_time');
-    var now = Date.now();
-    var timeOnSite = ( now - start ) / 1000;
-
+// check "pageviews" criteria for each box
+function checkPageViewsCriteria() {
     each(boxes, function(box) {
-        if( ! box.mayAutoShow() || box.config.trigger.method !== 'time_on_site' ) {
+        if( ! box.mayAutoShow() ) {
             return;
         }
 
-        if( timeOnSite > box.config.trigger.value ) {
+        if( box.config.trigger.method === 'pageviews' && pageViews >= box.config.trigger.value ) {
+            box.trigger();
+        }
+    });
+}
+
+// check time trigger criteria for each box
+function checkTimeCriteria() {
+    each(boxes, function(box) {
+        if( ! box.mayAutoShow() ) {
+            return;
+        }
+
+        // check "time on site" trigger
+        if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value) {
+            box.trigger();
+        }
+
+        // check "time on page" trigger
+        if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value) {
             box.trigger();
         }
     });
@@ -865,7 +892,7 @@ function checkTimeCriteria() {
 // check triggerHeight criteria for all boxes
 function checkHeightCriteria() {
     var scrollY = window.scrollY;
-    var scrollHeight = scrollY + ( windowHeight * 0.9 );
+    var scrollHeight = scrollY + ( windowHeight * 0.667 );
 
     each(boxes, function(box) {
         if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
@@ -918,9 +945,11 @@ function triggerExitIntent() {
 }
 
 function onMouseLeave(e) {
+    var delay = 400;
+
     // did mouse leave at top of window?
-    if( e.clientY < 0 ) {
-        exitIntentDelayTimer = window.setTimeout(triggerExitIntent, 1000);
+    if( e.clientY <= 0 ) {
+        exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
     }
 }
 
@@ -931,8 +960,24 @@ function onMouseEnter() {
     }
 }
 
+var timers = {
+    start: function() {
+        var sessionTime = sessionStorage.getItem('boxzilla_timer');
+        if( sessionTime ) siteTimer.time = sessionTime;
+        siteTimer.start();
+        pageTimer.start();
+    },
+    stop: function() {
+        sessionStorage.setItem('boxzilla_timer', siteTimer.time);
+        siteTimer.stop();
+        pageTimer.stop();
+    }
+};
+
 // initialise & add event listeners
 Boxzilla.init = function() {
+    var html = document.documentElement;
+
     // add overlay element to dom
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
@@ -941,15 +986,20 @@ Boxzilla.init = function() {
     $(window).on('scroll', throttle(checkHeightCriteria));
     $(window).on('resize', throttle(recalculateHeights));
     $(window).on('load', recalculateHeights );
-    $(document).on('mouseleave', onMouseLeave);
-    $(document).on('mouseenter', onMouseEnter);
-    $(document).keyup(onKeyUp);
+    $(html).on('mouseleave', onMouseLeave);
+    $(html).on('mouseenter', onMouseEnter);
+    $(html).on('keyup', onKeyUp);
     $(overlay).click(onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
+    window.setTimeout(checkPageViewsCriteria, 1000 );
 
-    if(! sessionStorage.getItem('boxzilla_start_time')) {
-        sessionStorage.setItem('boxzilla_start_time', Date.now());
-    }
+    timers.start();
+    $(window).on('focus', timers.start);
+    $(window).on('beforeunload', function() {
+        timers.stop();
+        sessionStorage.setItem('boxzilla_pageviews', ++pageViews);
+    });
+    $(window).on('blur', timers.stop);
 
     Boxzilla.trigger('ready');
 };
@@ -1001,9 +1051,33 @@ Boxzilla.toggle = function(id) {
     }
 };
 
+window.Boxzilla = Boxzilla;
+
 if ( typeof module !== 'undefined' && module.exports ) {
     module.exports = Boxzilla;
-} else {
-    this.Boxzilla = Boxzilla;
 }
-},{"./Box.js":2,"wolfy87-eventemitter":1}]},{},[3]);
+},{"./Box.js":2,"./Timer.js":4,"wolfy87-eventemitter":1}],4:[function(require,module,exports){
+'use strict';
+
+var Timer = function(start) {
+    this.time = start;
+    this.interval = 0;
+};
+
+Timer.prototype.tick = function() {
+    this.time++;
+};
+
+Timer.prototype.start = function() {
+    if( ! this.interval ) {
+        this.interval = window.setInterval(this.tick.bind(this), 1000);
+    }
+};
+
+Timer.prototype.stop = function() {
+    window.clearInterval(this.interval);
+    this.interval = 0;
+};
+
+module.exports = Timer;
+},{}]},{},[3]);
