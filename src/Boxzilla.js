@@ -86,7 +86,7 @@ function checkTimeCriteria() {
 // check triggerHeight criteria for all boxes
 function checkHeightCriteria() {
     var scrollY = window.scrollY;
-    var scrollHeight = scrollY + ( windowHeight * 0.9 );
+    var scrollHeight = scrollY + ( windowHeight * 0.667 );
 
     each(boxes, function(box) {
         if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
