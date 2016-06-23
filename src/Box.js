@@ -12,7 +12,8 @@ var $ = window.jQuery,
         'testMode': false,
         'trigger': false,
         'closable': true
-    }, Boxzilla;
+    },
+    Boxzilla;
 
 /**
  * Merge 2 objects, values of the latter overwriting the former.
@@ -106,7 +107,7 @@ Box.prototype.dom = function() {
     content.innerHTML = this.config.content;
     box.appendChild(content);
 
-    // remove <script> from box content and append them to head
+    // remove <script> from box content and append them to the document body
     var scripts = content.querySelectorAll('script');
     if(scripts.length) {
         var script = document.createElement('script');
@@ -114,8 +115,11 @@ Box.prototype.dom = function() {
             script.appendChild(document.createTextNode(scripts[i].text));
             scripts[i].parentNode.removeChild(scripts[i]);
         }
-        document.head.appendChild(script);
+        document.body.appendChild(script);
     }
+
+    // for safety measure, restore jQuery
+    window.jQuery = $;
 
     if( this.config.closable && this.config.icon ) {
         var icon = document.createElement('span');
