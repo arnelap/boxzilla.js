@@ -1,7 +1,6 @@
 'use strict';
 
-var $ = window.jQuery,
-    EventEmitter = require('wolfy87-eventemitter'),
+var EventEmitter = require('wolfy87-eventemitter'),
     Boxzilla = Object.create(EventEmitter.prototype),
     Box = require('./Box.js')(Boxzilla),
     Timer = require('./Timer.js'),
@@ -170,30 +169,28 @@ var timers = {
 
 // initialise & add event listeners
 Boxzilla.init = function() {
-    var html = document.documentElement;
-
     // add overlay element to dom
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
 
     // event binds
-    $(window).on('scroll', throttle(checkHeightCriteria));
-    $(window).on('resize', throttle(recalculateHeights));
-    $(window).on('load', recalculateHeights );
-    $(html).on('mouseleave', onMouseLeave);
-    $(html).on('mouseenter', onMouseEnter);
-    $(html).on('keyup', onKeyUp);
-    $(overlay).click(onOverlayClick);
+    window.addEventListener('scroll', throttle(checkHeightCriteria));
+    window.addEventListener('resize', throttle(recalculateHeights));
+    window.addEventListener('load', recalculateHeights );
+    window.addEventListener('mouseleave', onMouseLeave);
+    window.addEventListener('mouseenter', onMouseEnter);
+    window.addEventListener('keyup', onKeyUp);
+    overlay.addEventListener('click', onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
     window.setTimeout(checkPageViewsCriteria, 1000 );
 
     timers.start();
-    $(window).on('focus', timers.start);
-    $(window).on('beforeunload', function() {
+    window.addEventListener('focus', timers.start);
+    window.addEventListener('beforeunload', function() {
         timers.stop();
         sessionStorage.setItem('boxzilla_pageviews', ++pageViews);
     });
-    $(window).on('blur', timers.stop);
+    window.addEventListener('blur', timers.stop);
 
     Boxzilla.trigger('ready');
 };

@@ -477,8 +477,7 @@
 },{}],2:[function(require,module,exports){
 'use strict';
 
-var $ = window.jQuery,
-    defaults = {
+var defaults = {
         'animation': 'fade',
         'rehide': false,
         'content': '',
@@ -491,6 +490,42 @@ var $ = window.jQuery,
         'closable': true
     },
     Boxzilla;
+
+function animate(el, property, target, callback) {
+    var last = +new Date();
+    var css = window.getComputedStyle(el);
+    var initial = parseFloat(css[property]);
+    var step = ( target - initial ) / 500;
+
+    console.log("Now: " + initial);
+    console.log("Step: " + step);
+
+    var tick = function() {
+        var suffix = property == "height" ? "px" : "";
+        var current = parseFloat(el.style[property]) || initial;
+        var increment = step * (new Date() - last);
+        var newValue = current + increment;
+        var done = false;
+
+        if( step > 0 && newValue > target || step < 0 && newValue < target ) {
+            newValue = target;
+            done = true;
+        }
+
+        el.style[property] = newValue + suffix;
+        //el.style.opacity = +el.style.opacity + (new Date() - last) / 400;
+        last = +new Date();
+
+        // keep going
+        if(!done) {
+            (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
+        } else {
+            callback && callback();
+        }
+    };
+
+    tick();
+}
 
 /**
  * Merge 2 objects, values of the latter overwriting the former.
@@ -534,7 +569,6 @@ var Box = function( id, config ) {
 
     // create dom element for this box
     this.element = this.dom();
-    this.$element = $(this.element);
 
     // further initialise the box
     this.events();
@@ -545,26 +579,31 @@ Box.prototype.events = function() {
     var box = this;
 
     // attach event to "close" icon inside box
-    this.$element.find('.boxzilla-close-icon').click(box.dismiss.bind(this));
+    this.element.querySelector('.boxzilla-close-icon').addEventListener('click', box.dismiss.bind(this));
 
-    this.$element.on('click', 'a', function(e) {
-        Boxzilla.trigger('box.interactions.link', [ box, e.target ] );
-    });
+    this.element.addEventListener('click', function(e) {
+        if( e.target.tagName === 'A' ) {
+            Boxzilla.trigger('box.interactions.link', [ box, e.target ] );
+        }
+    }, false);
 
-    this.$element.on('submit', 'form', function(e) {
+    this.element.addEventListener('submit', function(e) {
         box.setCookie();
         Boxzilla.trigger('box.interactions.form', [ box, e.target ]);
-    });
+    }, false);
 
     // attach event to all links referring #boxzilla-{box_id}
-    $(document.body).on('click', 'a[href="#boxzilla-' + box.id + '"]', function() {
-        box.toggle();
-        return false;
-    });
+    document.body.addEventListener('click', function(e) {
+        var href = "#boxzilla-" + box.id;
+        if(e.target.tagName === 'A' && e.target.getAttribute("href").substring(-(href.length)) === href) {
+            box.toggle();
+            e.preventDefault();
+        }
+    }, false);
 
     // maybe show box right away
     if( this.fits() && this.locationHashRefersBox() ) {
-        $(window).load(this.show.bind(this));
+        window.addEventListener('load', this.show.bind(this));
     }
 
 };
@@ -575,6 +614,7 @@ Box.prototype.dom = function() {
     wrapper.className = 'boxzilla-container boxzilla-' + this.config.position + '-container';
 
     var box = document.createElement('div');
+    box.setAttribute('id', 'boxzilla-' + this.id);
     box.className = 'boxzilla boxzilla-' + this.id + ' boxzilla-' + this.config.position;
     box.style.display = 'none';
     wrapper.appendChild(box);
@@ -594,10 +634,7 @@ Box.prototype.dom = function() {
         }
         document.body.appendChild(script);
     }
-
-    // for safety measure, restore jQuery
-    window.jQuery = $;
-
+    
     if( this.config.closable && this.config.icon ) {
         var icon = document.createElement('span');
         icon.className = "boxzilla-close-icon";
@@ -619,7 +656,7 @@ Box.prototype.setCustomBoxStyling = function() {
 
     // get new dimensions
     var windowHeight = window.innerHeight;
-    var boxHeight = this.$element.outerHeight();
+    var boxHeight = this.element.clientHeight;
 
     // add scrollbar to box and limit height
     if( boxHeight > windowHeight ) {
@@ -644,11 +681,6 @@ Box.prototype.toggle = function(show) {
         show = ! this.visible;
     }
 
-    // do nothing if element is being animated
-    if( this.$element.is(':animated') ) {
-        return false;
-    }
-
     // is box already at desired visibility?
     if( show === this.visible ) {
         return false;
@@ -665,23 +697,48 @@ Box.prototype.toggle = function(show) {
     // calculate custom styling for which CSS is "too stupid"
     this.setCustomBoxStyling();
 
-    // fadein / fadeout the overlay if position is "center"
-    if( this.config.position === 'center' ) {
-        $(this.overlay).fadeToggle('slow');
-    }
-
     // trigger event
     Boxzilla.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
 
     // show or hide box using selected animation
-    if( this.config.animation === 'fade' ) {
-        this.$element.fadeToggle( 'slow' );
+    if( this.visible ) {
+        this.element.style.display = '';
+        var targetHeight = this.element.clientHeight;
+
+        if( this.config.position === 'center' ) {
+            this.overlay.style.display = 'block';
+            this.overlay.style.opacity = 0;
+            animate(this.overlay, 'opacity', 1);
+        }
+
+        if( this.config.animation == "fade" ) {
+            this.element.style.opacity = 0;
+            animate(this.element, "opacity", 1);
+        } else {
+            this.element.style.height = 0;
+            animate(this.element, "height", targetHeight);
+        }
     } else {
-        this.$element.slideToggle( 'slow' );
+        var thenHide = function() {
+            this.style.display = 'none';
+        };
+        if( this.config.animation == "fade" ) {
+            animate(this.element, "opacity", 0, thenHide.bind(this.element));
+        } else {
+            this.element.style.boxSizing = 'border-box';
+            animate(this.element, "height", 0, thenHide.bind(this.element));
+        }
+
+        if( this.config.position === 'center' ) {
+            animate(this.overlay, 'opacity', 0, thenHide.bind(this.overlay));
+        }
     }
 
-    // // focus on first input field in box
-    // this.$element.find('input').first().focus();
+    // focus on first input field in box
+    var firstInput = this.element.querySelector('input, textarea');
+    if(firstInput) {
+        firstInput.focus();
+    }
 
     return true;
 };
@@ -701,10 +758,13 @@ Box.prototype.calculateTriggerHeight = function() {
     var triggerHeight = 0;
 
     if( this.config.trigger.method === 'element' ) {
-        var $triggerElement = $(this.config.trigger.value).first();
-        triggerHeight = ( $triggerElement.length > 0 ) ? $triggerElement.offset().top : 0;
+        var triggerElement = document.body.querySelector(this.config.trigger.value);
+        if( triggerElement ) {
+            var offset = triggerElement.getBoundingClientRect();
+            triggerHeight = offset.top;
+        }
     } else if( this.config.trigger.method === 'percentage' ) {
-        triggerHeight = ( this.config.trigger.value / 100 * $(document).height() );
+        triggerHeight = ( this.config.trigger.value / 100 * document.clientHeight );
     }
 
     return triggerHeight;
@@ -810,8 +870,7 @@ module.exports = function(_Boxzilla) {
 },{}],3:[function(require,module,exports){
 'use strict';
 
-var $ = window.jQuery,
-    EventEmitter = require('wolfy87-eventemitter'),
+var EventEmitter = require('wolfy87-eventemitter'),
     Boxzilla = Object.create(EventEmitter.prototype),
     Box = require('./Box.js')(Boxzilla),
     Timer = require('./Timer.js'),
@@ -980,30 +1039,28 @@ var timers = {
 
 // initialise & add event listeners
 Boxzilla.init = function() {
-    var html = document.documentElement;
-
     // add overlay element to dom
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
 
     // event binds
-    $(window).on('scroll', throttle(checkHeightCriteria));
-    $(window).on('resize', throttle(recalculateHeights));
-    $(window).on('load', recalculateHeights );
-    $(html).on('mouseleave', onMouseLeave);
-    $(html).on('mouseenter', onMouseEnter);
-    $(html).on('keyup', onKeyUp);
-    $(overlay).click(onOverlayClick);
+    window.addEventListener('scroll', throttle(checkHeightCriteria));
+    window.addEventListener('resize', throttle(recalculateHeights));
+    window.addEventListener('load', recalculateHeights );
+    window.addEventListener('mouseleave', onMouseLeave);
+    window.addEventListener('mouseenter', onMouseEnter);
+    window.addEventListener('keyup', onKeyUp);
+    overlay.addEventListener('click', onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
     window.setTimeout(checkPageViewsCriteria, 1000 );
 
     timers.start();
-    $(window).on('focus', timers.start);
-    $(window).on('beforeunload', function() {
+    window.addEventListener('focus', timers.start);
+    window.addEventListener('beforeunload', function() {
         timers.stop();
         sessionStorage.setItem('boxzilla_pageviews', ++pageViews);
     });
-    $(window).on('blur', timers.stop);
+    window.addEventListener('blur', timers.stop);
 
     Boxzilla.trigger('ready');
 };
