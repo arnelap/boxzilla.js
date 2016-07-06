@@ -6,7 +6,7 @@ var EventEmitter = require('wolfy87-eventemitter'),
     Timer = require('./Timer.js'),
     boxes = {},
     windowHeight = window.innerHeight,
-    overlay = document.createElement('div'),
+    overlay,
     exitIntentDelayTimer,
     exitIntentTriggered,
     siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0),
@@ -170,6 +170,8 @@ var timers = {
 // initialise & add event listeners
 Boxzilla.init = function() {
     // add overlay element to dom
+    overlay = document.createElement('div');
+    overlay.style.display = 'none';
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
 

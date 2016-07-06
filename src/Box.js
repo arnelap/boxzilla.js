@@ -12,43 +12,9 @@ var defaults = {
         'trigger': false,
         'closable': true
     },
-    Boxzilla;
+    Boxzilla,
+    Animator = require('./Animator.js');
 
-function animate(el, property, target, callback) {
-    var last = +new Date();
-    var css = window.getComputedStyle(el);
-    var initial = parseFloat(css[property]);
-    var step = ( target - initial ) / 500;
-
-    console.log("Now: " + initial);
-    console.log("Step: " + step);
-
-    var tick = function() {
-        var suffix = property == "height" ? "px" : "";
-        var current = parseFloat(el.style[property]) || initial;
-        var increment = step * (new Date() - last);
-        var newValue = current + increment;
-        var done = false;
-
-        if( step > 0 && newValue > target || step < 0 && newValue < target ) {
-            newValue = target;
-            done = true;
-        }
-
-        el.style[property] = newValue + suffix;
-        //el.style.opacity = +el.style.opacity + (new Date() - last) / 400;
-        last = +new Date();
-
-        // keep going
-        if(!done) {
-            (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
-        } else {
-            callback && callback();
-        }
-    };
-
-    tick();
-}
 
 /**
  * Merge 2 objects, values of the latter overwriting the former.
@@ -209,6 +175,11 @@ Box.prototype.toggle = function(show) {
         return false;
     }
 
+    // is box being animated?
+    if( Animator.animated(this.element) ) {
+        return false;
+    }
+
     // if box should be hidden but is not closable, bail.
     if( ! show && ! this.config.closable ) {
         return false;
@@ -217,45 +188,15 @@ Box.prototype.toggle = function(show) {
     // set new visibility status
     this.visible = show;
 
-    // calculate custom styling for which CSS is "too stupid"
-    this.setCustomBoxStyling();
-
     // trigger event
     Boxzilla.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
 
     // show or hide box using selected animation
-    if( this.visible ) {
-        this.element.style.display = '';
-        var targetHeight = this.element.clientHeight;
-
-        if( this.config.position === 'center' ) {
-            this.overlay.style.display = 'block';
-            this.overlay.style.opacity = 0;
-            animate(this.overlay, 'opacity', 1);
-        }
-
-        if( this.config.animation == "fade" ) {
-            this.element.style.opacity = 0;
-            animate(this.element, "opacity", 1);
-        } else {
-            this.element.style.height = 0;
-            animate(this.element, "height", targetHeight);
-        }
-    } else {
-        var thenHide = function() {
-            this.style.display = 'none';
-        };
-        if( this.config.animation == "fade" ) {
-            animate(this.element, "opacity", 0, thenHide.bind(this.element));
-        } else {
-            this.element.style.boxSizing = 'border-box';
-            animate(this.element, "height", 0, thenHide.bind(this.element));
-        }
-
-        if( this.config.position === 'center' ) {
-            animate(this.overlay, 'opacity', 0, thenHide.bind(this.overlay));
-        }
+    if( this.config.position === 'center' ) {
+        Animator.toggle(this.overlay, "fade");
     }
+
+    Animator.toggle(this.element, this.config.animation);
 
     // focus on first input field in box
     var firstInput = this.element.querySelector('input, textarea');
