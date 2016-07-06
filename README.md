@@ -1,16 +1,15 @@
 # Boxzilla.js
 
-Boxzilla.js is a simple jQuery library for creating boxes which can pop-up or slide-in at predefined moments.
+Boxzilla.js is a simple JavaScript library for creating boxes which can pop-up or slide-in at predefined moments.
 
 This is the script powering the [Boxzilla plugin for WordPress](https://boxzillaplugin.com/).
 
 
 ## Usage
 
-First, include the script in your webpage. Make sure jQuery is loaded as well.
+First, include the script in your webpage.
 
 ```html
-<script src="/jquery.js"></script>
 <script src="/boxzilla.js"></script>
 <link rel="stylesheet" href="/boxzilla.css" />
 ```
