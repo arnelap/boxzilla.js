@@ -198,6 +198,7 @@ Box.prototype.toggle = function(show) {
     // set new visibility status
     this.visible = show;
 
+    // calculate new styling rules
     this.setCustomBoxStyling();
 
     // trigger event
