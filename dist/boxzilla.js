@@ -560,32 +560,33 @@ function toggle(element, animation) {
 }
 
 function animate(element, targetStyles) {
+    var start = +new Date();
     var last = +new Date();
-    var styles = window.getComputedStyle(element);
-    var steps = {};
+    var initalStyles = window.getComputedStyle(element);
+    var currentStyles = {};
+    var propSteps = {};
 
     for(var property in targetStyles) {
         // make sure we have an object filled with floats
         targetStyles[property] = parseFloat(targetStyles[property]);
 
-        // calculate step size
+        // calculate step size & current value
         var to = targetStyles[property];
-        var current = parseFloat(styles[property]);
-        steps[property] = ( to - current ) / duration;
-
+        var current = parseFloat(initalStyles[property]);
+        propSteps[property] = ( to - current ) / duration; // points per second
+        currentStyles[property] = current;
     }
 
     var tick = function() {
-        var timeSinceLastTick = (new Date() - last);
+        var now = +new Date();
+        var timeSinceLastTick = now - last;
         var done = true;
 
-
         for(var property in targetStyles ) {
-            var step = steps[property];
+            var step = propSteps[property];
             var to = targetStyles[property];
-            var suffix = property !== "opacity" ? "px" : "";
-            var current = parseFloat(element.style[property]) || parseFloat(styles[property]);
-            var increment = step * timeSinceLastTick;
+            var current = currentStyles[property];
+            var increment =  step * timeSinceLastTick;
             var newValue = current + increment;
 
             if( step > 0 && newValue >= to || step < 0 && newValue <= to ) {
@@ -594,6 +595,9 @@ function animate(element, targetStyles) {
                 done = false;
             }
 
+            currentStyles[property] = newValue;
+
+            var suffix = property !== "opacity" ? "px" : "";
             element.style[property] = newValue + suffix;
         }
 
