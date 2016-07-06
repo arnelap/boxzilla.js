@@ -813,7 +813,7 @@ Box.prototype.calculateTriggerHeight = function() {
             triggerHeight = offset.top;
         }
     } else if( this.config.trigger.method === 'percentage' ) {
-        triggerHeight = ( this.config.trigger.value / 100 * document.clientHeight );
+        triggerHeight = ( this.config.trigger.value / 100 * document.body.clientHeight );
     }
 
     return triggerHeight;
@@ -924,13 +924,9 @@ var EventEmitter = require('wolfy87-eventemitter'),
     Box = require('./Box.js')(Boxzilla),
     Timer = require('./Timer.js'),
     boxes = {},
-    windowHeight = window.innerHeight,
-    overlay,
-    exitIntentDelayTimer,
-    exitIntentTriggered,
-    siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0),
-    pageTimer = new Timer(0),
-    pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
+    windowHeight, overlay,
+    exitIntentDelayTimer, exitIntentTriggered,
+    siteTimer, pageTimer, pageViews;
 
 function each( obj, callback ) {
     for( var key in obj ) {
@@ -1088,6 +1084,11 @@ var timers = {
 
 // initialise & add event listeners
 Boxzilla.init = function() {
+    siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
+    pageTimer = new Timer(0);
+    pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
+    windowHeight = window.innerHeight;
+
     // add overlay element to dom
     overlay = document.createElement('div');
     overlay.style.display = 'none';
