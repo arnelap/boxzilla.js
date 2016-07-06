@@ -475,113 +475,144 @@
 }.call(this));
 
 },{}],2:[function(require,module,exports){
-var Animator = (function() {
+var duration = 250;
 
-    /**
-     * Checks if the given element is currently being animated.
-     *
-     * @param element
-     * @returns {boolean}
-     */
-    function animated(element) {
-        return element.getAttribute('data-animated') == 1;
+function css(element, styles) {
+    for(var property in styles) {
+        element.style[property] = styles[property];
+    }
+}
+
+function initObjectProperties(properties, value) {
+    var newObject = {};
+    for(var i=0; i<properties.length; i++) {
+        newObject[properties[i]] = value;
+    }
+    return newObject;
+}
+
+function copyObjectProperties(properties, object) {
+    var newObject = {}
+    for(var i=0; i<properties.length; i++) {
+        newObject[properties[i]] = object[properties[i]];
+    }
+    return newObject;
+}
+
+/**
+ * Checks if the given element is currently being animated.
+ *
+ * @param element
+ * @returns {boolean}
+ */
+function animated(element) {
+    return element.getAttribute('data-animated') == 1;
+}
+
+/**
+ * Toggles the element using the given animation.
+ *
+ * @param element
+ * @param animation Either "fade" or "slide"
+ */
+function toggle(element, animation) {
+    var visible = element.style.display != 'none' || element.offsetLeft > 0;
+
+    // create clone for reference
+    var clone = element.cloneNode(true);
+    element.setAttribute('data-animated', 1);
+
+    // toggle element visiblity right away if we're making something visible
+    if( ! visible ) {
+        element.style.display = '';
     }
 
-    /**
-     * Toggles the element using the given animation.
-     *
-     * @param element
-     * @param animation Either "fade" or "slide"
-     */
-    function toggle(element, animation) {
-        var visible = element.style.display != 'none' || element.offsetLeft > 0;
-        var targetCSS = {
-            paddingTop: 0,
-            paddingBottom: 0,
-            height: 0,
-            opacity: 0
-        };
+    // animate properties
+    if( animation === 'slide' ) {
+        var hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
+        var visibleStyles = {};
 
-        // create clone and reset properties
-        var clone = element.cloneNode(true);
-        clone.style.display = '';
-        element.setAttribute('data-animated', 1);
-
-        // toggle element visiblity right away if we're making something visible
         if( ! visible ) {
-            element.style.display = '';
+            ccss = window.getComputedStyle(element);
+            visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], ccss);
+            css(element, hiddenStyles);
         }
 
-        // animate properties
-        if( animation === 'slide' ) {
-            if( ! visible ) {
-                targetCSS = window.getComputedStyle(clone);
-                element.style.height = 0;
-                element.style.paddingTop = 0;
-                element.style.paddingBottom = 0;
-            }
-
-            // don't show scrollbar during animation
-            element.style.overflowY = 'hidden';
-            css(element, "height",  targetCSS.height);
-            css(element, "padding-top", targetCSS.paddingTop);
-            css(element, "padding-bottom", targetCSS.paddingBottom);
-        } else {
-            if( ! visible ) {
-                targetCSS.opacity = 1;
-                element.style.opacity = 0;
-            }
-
-            css(element, "opacity", targetCSS.opacity);
+        // don't show scrollbar during animation
+        element.style.overflowY = 'hidden';
+        animate(element, visible ? hiddenStyles : visibleStyles);
+    } else {
+        var hiddenStyles = { opacity: 0 }
+        var visibleStyles = { opacity: 1 }
+        if( ! visible ) {
+            css(element, hiddenStyles);
         }
 
-        // clean-up after animation
-        window.setTimeout(function() {
-            element.removeAttribute('data-animated');
+        animate(element, visible ? hiddenStyles : visibleStyles);
+    }
 
-            if( animation == "slide") {
-                element.style.overflowY = clone.style.overflowY;
-                element.style.height = clone.style.height;
-                element.style.paddingTop = clone.style.paddingTop;
-                element.style.paddingBottom = clone.style.paddingBottom;
-            } else{
-                element.style.opacity = clone.style.opacity;
+    // clean-up after animation
+    window.setTimeout(function() {
+        element.removeAttribute('data-animated');
+        element.setAttribute('style', clone.getAttribute('style'));
+        element.style.display = visible ? 'none' : '';
+    }, duration * 1.2);
+}
+
+function animate(element, targetStyles) {
+    var last = +new Date();
+    var styles = window.getComputedStyle(element);
+    var steps = {};
+
+    for(var property in targetStyles) {
+        // make sure we have an object filled with floats
+        targetStyles[property] = parseFloat(targetStyles[property]);
+
+        // calculate step size
+        var to = targetStyles[property];
+        var current = parseFloat(styles[property]);
+        steps[property] = ( to - current ) / duration;
+
+    }
+
+    var tick = function() {
+        var timeSinceLastTick = (new Date() - last);
+        var done = true;
+
+
+        for(var property in targetStyles ) {
+            var step = steps[property];
+            var to = targetStyles[property];
+            var suffix = property !== "opacity" ? "px" : "";
+            var current = parseFloat(element.style[property]) || parseFloat(styles[property]);
+            var increment = step * timeSinceLastTick;
+            var newValue = current + increment;
+
+            if( step > 0 && newValue >= to || step < 0 && newValue <= to ) {
+                newValue = to;
+            } else {
+                done = false;
             }
 
-            if( visible ) {
-                element.style.display = 'none';
-            }
-        }, 1000);
-    }
+            element.style[property] = newValue + suffix;
+        }
 
-    function camelCase(string) {
-        return string.replace(/-([a-z])/gi, function(s, group1) {
-            return group1.toUpperCase();
-        });
-    }
+        last = +new Date();
 
-    function css(element, property, to) {
-        var transitions = element.style.transition.split(', ').filter(function(t) {
-            return t != "" && t.indexOf(property) < 0;
-        });
-        transitions.push(property + " 0.8s");
-        element.style.transition = transitions.join(', ');
+        // keep going until we're done for all props
+        if(!done) {
+            (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 32);
+        }
+    };
 
-        var jsProperty = camelCase(property);
+    tick();
+}
 
-        // transition to new property
-        window.setTimeout(function() {
-            element.style[jsProperty] = to;
-        }, 0);
-    }
 
-    return {
-        'toggle': toggle,
-        'animated': animated
-    }
-})();
-
-module.exports = Animator;
+module.exports = {
+    'toggle': toggle,
+    'animated': animated
+}
 },{}],3:[function(require,module,exports){
 'use strict';
 
@@ -599,7 +630,6 @@ var defaults = {
     },
     Boxzilla,
     Animator = require('./Animator.js');
-
 
 /**
  * Merge 2 objects, values of the latter overwriting the former.
@@ -725,6 +755,8 @@ Box.prototype.dom = function() {
 Box.prototype.setCustomBoxStyling = function() {
 
     // reset element to its initial state
+    var origDisplay = this.element.style.display;
+    this.element.style.display = '';
     this.element.style.overflowY = 'auto';
     this.element.style.maxHeight = 'none';
 
@@ -745,6 +777,7 @@ Box.prototype.setCustomBoxStyling = function() {
         this.element.style.marginTop = newTopMargin + "px";
     }
 
+    this.element.style.display = origDisplay;
 };
 
 // toggle visibility of the box
@@ -772,6 +805,8 @@ Box.prototype.toggle = function(show) {
 
     // set new visibility status
     this.visible = show;
+
+    this.setCustomBoxStyling();
 
     // trigger event
     Boxzilla.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
