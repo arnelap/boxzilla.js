@@ -475,6 +475,114 @@
 }.call(this));
 
 },{}],2:[function(require,module,exports){
+var Animator = (function() {
+
+    /**
+     * Checks if the given element is currently being animated.
+     *
+     * @param element
+     * @returns {boolean}
+     */
+    function animated(element) {
+        return element.getAttribute('data-animated') == 1;
+    }
+
+    /**
+     * Toggles the element using the given animation.
+     *
+     * @param element
+     * @param animation Either "fade" or "slide"
+     */
+    function toggle(element, animation) {
+        var visible = element.style.display != 'none' || element.offsetLeft > 0;
+        var targetCSS = {
+            paddingTop: 0,
+            paddingBottom: 0,
+            height: 0,
+            opacity: 0
+        };
+
+        // create clone and reset properties
+        var clone = element.cloneNode(true);
+        clone.style.display = '';
+        element.setAttribute('data-animated', 1);
+
+        // toggle element visiblity right away if we're making something visible
+        if( ! visible ) {
+            element.style.display = '';
+        }
+
+        // animate properties
+        if( animation === 'slide' ) {
+            if( ! visible ) {
+                targetCSS = window.getComputedStyle(clone);
+                element.style.height = 0;
+                element.style.paddingTop = 0;
+                element.style.paddingBottom = 0;
+            }
+
+            // don't show scrollbar during animation
+            element.style.overflowY = 'hidden';
+            css(element, "height",  targetCSS.height);
+            css(element, "padding-top", targetCSS.paddingTop);
+            css(element, "padding-bottom", targetCSS.paddingBottom);
+        } else {
+            if( ! visible ) {
+                targetCSS.opacity = 1;
+                element.style.opacity = 0;
+            }
+
+            css(element, "opacity", targetCSS.opacity);
+        }
+
+        // clean-up after animation
+        window.setTimeout(function() {
+            element.removeAttribute('data-animated');
+
+            if( animation == "slide") {
+                element.style.overflowY = clone.style.overflowY;
+                element.style.height = clone.style.height;
+                element.style.paddingTop = clone.style.paddingTop;
+                element.style.paddingBottom = clone.style.paddingBottom;
+            } else{
+                element.style.opacity = clone.style.opacity;
+            }
+
+            if( visible ) {
+                element.style.display = 'none';
+            }
+        }, 1000);
+    }
+
+    function camelCase(string) {
+        return string.replace(/-([a-z])/gi, function(s, group1) {
+            return group1.toUpperCase();
+        });
+    }
+
+    function css(element, property, to) {
+        var transitions = element.style.transition.split(', ').filter(function(t) {
+            return t != "" && t.indexOf(property) < 0;
+        });
+        transitions.push(property + " 0.8s");
+        element.style.transition = transitions.join(', ');
+
+        var jsProperty = camelCase(property);
+
+        // transition to new property
+        window.setTimeout(function() {
+            element.style[jsProperty] = to;
+        }, 0);
+    }
+
+    return {
+        'toggle': toggle,
+        'animated': animated
+    }
+})();
+
+module.exports = Animator;
+},{}],3:[function(require,module,exports){
 'use strict';
 
 var defaults = {
@@ -489,43 +597,9 @@ var defaults = {
         'trigger': false,
         'closable': true
     },
-    Boxzilla;
+    Boxzilla,
+    Animator = require('./Animator.js');
 
-function animate(el, property, target, callback) {
-    var last = +new Date();
-    var css = window.getComputedStyle(el);
-    var initial = parseFloat(css[property]);
-    var step = ( target - initial ) / 500;
-
-    console.log("Now: " + initial);
-    console.log("Step: " + step);
-
-    var tick = function() {
-        var suffix = property == "height" ? "px" : "";
-        var current = parseFloat(el.style[property]) || initial;
-        var increment = step * (new Date() - last);
-        var newValue = current + increment;
-        var done = false;
-
-        if( step > 0 && newValue > target || step < 0 && newValue < target ) {
-            newValue = target;
-            done = true;
-        }
-
-        el.style[property] = newValue + suffix;
-        //el.style.opacity = +el.style.opacity + (new Date() - last) / 400;
-        last = +new Date();
-
-        // keep going
-        if(!done) {
-            (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
-        } else {
-            callback && callback();
-        }
-    };
-
-    tick();
-}
 
 /**
  * Merge 2 objects, values of the latter overwriting the former.
@@ -686,6 +760,11 @@ Box.prototype.toggle = function(show) {
         return false;
     }
 
+    // is box being animated?
+    if( Animator.animated(this.element) ) {
+        return false;
+    }
+
     // if box should be hidden but is not closable, bail.
     if( ! show && ! this.config.closable ) {
         return false;
@@ -694,45 +773,15 @@ Box.prototype.toggle = function(show) {
     // set new visibility status
     this.visible = show;
 
-    // calculate custom styling for which CSS is "too stupid"
-    this.setCustomBoxStyling();
-
     // trigger event
     Boxzilla.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
 
     // show or hide box using selected animation
-    if( this.visible ) {
-        this.element.style.display = '';
-        var targetHeight = this.element.clientHeight;
-
-        if( this.config.position === 'center' ) {
-            this.overlay.style.display = 'block';
-            this.overlay.style.opacity = 0;
-            animate(this.overlay, 'opacity', 1);
-        }
-
-        if( this.config.animation == "fade" ) {
-            this.element.style.opacity = 0;
-            animate(this.element, "opacity", 1);
-        } else {
-            this.element.style.height = 0;
-            animate(this.element, "height", targetHeight);
-        }
-    } else {
-        var thenHide = function() {
-            this.style.display = 'none';
-        };
-        if( this.config.animation == "fade" ) {
-            animate(this.element, "opacity", 0, thenHide.bind(this.element));
-        } else {
-            this.element.style.boxSizing = 'border-box';
-            animate(this.element, "height", 0, thenHide.bind(this.element));
-        }
-
-        if( this.config.position === 'center' ) {
-            animate(this.overlay, 'opacity', 0, thenHide.bind(this.overlay));
-        }
+    if( this.config.position === 'center' ) {
+        Animator.toggle(this.overlay, "fade");
     }
+
+    Animator.toggle(this.element, this.config.animation);
 
     // focus on first input field in box
     var firstInput = this.element.querySelector('input, textarea');
@@ -867,7 +916,7 @@ module.exports = function(_Boxzilla) {
     Boxzilla = _Boxzilla;
     return Box;
 };
-},{}],3:[function(require,module,exports){
+},{"./Animator.js":2}],4:[function(require,module,exports){
 'use strict';
 
 var EventEmitter = require('wolfy87-eventemitter'),
@@ -876,7 +925,7 @@ var EventEmitter = require('wolfy87-eventemitter'),
     Timer = require('./Timer.js'),
     boxes = {},
     windowHeight = window.innerHeight,
-    overlay = document.createElement('div'),
+    overlay,
     exitIntentDelayTimer,
     exitIntentTriggered,
     siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0),
@@ -1040,6 +1089,8 @@ var timers = {
 // initialise & add event listeners
 Boxzilla.init = function() {
     // add overlay element to dom
+    overlay = document.createElement('div');
+    overlay.style.display = 'none';
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
 
@@ -1117,7 +1168,7 @@ window.Boxzilla = Boxzilla;
 if ( typeof module !== 'undefined' && module.exports ) {
     module.exports = Boxzilla;
 }
-},{"./Box.js":2,"./Timer.js":4,"wolfy87-eventemitter":1}],4:[function(require,module,exports){
+},{"./Box.js":3,"./Timer.js":5,"wolfy87-eventemitter":1}],5:[function(require,module,exports){
 'use strict';
 
 var Timer = function(start) {
@@ -1141,4 +1192,4 @@ Timer.prototype.stop = function() {
 };
 
 module.exports = Timer;
-},{}]},{},[3]);
+},{}]},{},[4]);
