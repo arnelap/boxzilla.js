@@ -1,4 +1,4 @@
-var duration = 250;
+var duration = 320;
 
 function css(element, styles) {
     for(var property in styles) {
