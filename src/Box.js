@@ -15,7 +15,6 @@ var defaults = {
     Boxzilla,
     Animator = require('./Animator.js');
 
-
 /**
  * Merge 2 objects, values of the latter overwriting the former.
  *
@@ -140,6 +139,8 @@ Box.prototype.dom = function() {
 Box.prototype.setCustomBoxStyling = function() {
 
     // reset element to its initial state
+    var origDisplay = this.element.style.display;
+    this.element.style.display = '';
     this.element.style.overflowY = 'auto';
     this.element.style.maxHeight = 'none';
 
@@ -160,6 +161,7 @@ Box.prototype.setCustomBoxStyling = function() {
         this.element.style.marginTop = newTopMargin + "px";
     }
 
+    this.element.style.display = origDisplay;
 };
 
 // toggle visibility of the box
@@ -187,6 +189,8 @@ Box.prototype.toggle = function(show) {
 
     // set new visibility status
     this.visible = show;
+
+    this.setCustomBoxStyling();
 
     // trigger event
     Boxzilla.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
