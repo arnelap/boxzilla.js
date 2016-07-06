@@ -228,7 +228,7 @@ Box.prototype.calculateTriggerHeight = function() {
             triggerHeight = offset.top;
         }
     } else if( this.config.trigger.method === 'percentage' ) {
-        triggerHeight = ( this.config.trigger.value / 100 * document.clientHeight );
+        triggerHeight = ( this.config.trigger.value / 100 * document.body.clientHeight );
     }
 
     return triggerHeight;
