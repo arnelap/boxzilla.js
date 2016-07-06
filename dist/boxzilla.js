@@ -506,7 +506,7 @@ function copyObjectProperties(properties, object) {
  * @returns {boolean}
  */
 function animated(element) {
-    return element.getAttribute('data-animated') == 1;
+    return !! element.getAttribute('data-animated');
 }
 
 /**
@@ -516,53 +516,56 @@ function animated(element) {
  * @param animation Either "fade" or "slide"
  */
 function toggle(element, animation) {
-    var visible = element.style.display != 'none' || element.offsetLeft > 0;
+    var nowVisible = element.style.display != 'none' || element.offsetLeft > 0;
 
     // create clone for reference
     var clone = element.cloneNode(true);
-    element.setAttribute('data-animated', 1);
+
+    // store attribute so everyone knows we're animating this element
+    element.setAttribute('data-animated', "true");
 
     // toggle element visiblity right away if we're making something visible
-    if( ! visible ) {
+    if( ! nowVisible ) {
         element.style.display = '';
     }
 
+    var hiddenStyles, visibleStyles;
+
     // animate properties
     if( animation === 'slide' ) {
-        var hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
-        var visibleStyles = {};
+        hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
+        visibleStyles = {};
 
-        if( ! visible ) {
-            ccss = window.getComputedStyle(element);
-            visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], ccss);
+        if( ! nowVisible ) {
+            var computedStyles = window.getComputedStyle(element);
+            visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles);
             css(element, hiddenStyles);
         }
 
-        // don't show scrollbar during animation
+        // don't show a scrollbar during animation
         element.style.overflowY = 'hidden';
-        animate(element, visible ? hiddenStyles : visibleStyles);
+        animate(element, nowVisible ? hiddenStyles : visibleStyles);
     } else {
-        var hiddenStyles = { opacity: 0 }
-        var visibleStyles = { opacity: 1 }
-        if( ! visible ) {
+        hiddenStyles = { opacity: 0 };
+        visibleStyles = { opacity: 1 };
+        if( ! nowVisible ) {
             css(element, hiddenStyles);
         }
 
-        animate(element, visible ? hiddenStyles : visibleStyles);
+        animate(element, nowVisible ? hiddenStyles : visibleStyles);
     }
 
     // clean-up after animation
     window.setTimeout(function() {
         element.removeAttribute('data-animated');
         element.setAttribute('style', clone.getAttribute('style'));
-        element.style.display = visible ? 'none' : '';
+        element.style.display = nowVisible ? 'none' : '';
     }, duration * 1.2);
 }
 
 function animate(element, targetStyles) {
-    var start = +new Date();
     var last = +new Date();
-    var initalStyles = window.getComputedStyle(element);
+    var initialStyles = window.getComputedStyle(element);
     var currentStyles = {};
     var propSteps = {};
 
@@ -572,7 +575,7 @@ function animate(element, targetStyles) {
 
         // calculate step size & current value
         var to = targetStyles[property];
-        var current = parseFloat(initalStyles[property]);
+        var current = parseFloat(initialStyles[property]);
         propSteps[property] = ( to - current ) / duration; // points per second
         currentStyles[property] = current;
     }
@@ -582,12 +585,12 @@ function animate(element, targetStyles) {
         var timeSinceLastTick = now - last;
         var done = true;
 
+        var step, to, increment, newValue;
         for(var property in targetStyles ) {
-            var step = propSteps[property];
-            var to = targetStyles[property];
-            var current = currentStyles[property];
-            var increment =  step * timeSinceLastTick;
-            var newValue = current + increment;
+            step = propSteps[property];
+            to = targetStyles[property];
+            increment =  step * timeSinceLastTick;
+            newValue = currentStyles[property] + increment;
 
             if( step > 0 && newValue >= to || step < 0 && newValue <= to ) {
                 newValue = to;
@@ -595,6 +598,7 @@ function animate(element, targetStyles) {
                 done = false;
             }
 
+            // store new value
             currentStyles[property] = newValue;
 
             var suffix = property !== "opacity" ? "px" : "";
@@ -700,10 +704,18 @@ Box.prototype.events = function() {
         Boxzilla.trigger('box.interactions.form', [ box, e.target ]);
     }, false);
 
-    // attach event to all links referring #boxzilla-{box_id}
+    // listen to all "click" events
     document.body.addEventListener('click', function(e) {
-        var href = "#boxzilla-" + box.id;
-        if(e.target.tagName === 'A' && e.target.getAttribute("href").substring(-(href.length)) === href) {
+
+        // only act on links
+        if( e.target.tagName !== 'A' ) {
+            return;
+        }
+
+        // check if link href ends with "#boxzilla-{box.id}
+        var needle = "#boxzilla-" + box.id;
+        var haystack = e.target.getAttribute("href");
+        if( haystack && haystack.substring(-(needle.length)) === needle) {
             box.toggle();
             e.preventDefault();
         }
@@ -810,6 +822,7 @@ Box.prototype.toggle = function(show) {
     // set new visibility status
     this.visible = show;
 
+    // calculate new styling rules
     this.setCustomBoxStyling();
 
     // trigger event
@@ -1138,12 +1151,12 @@ Boxzilla.init = function() {
     window.addEventListener('scroll', throttle(checkHeightCriteria));
     window.addEventListener('resize', throttle(recalculateHeights));
     window.addEventListener('load', recalculateHeights );
-    window.addEventListener('mouseleave', onMouseLeave);
-    window.addEventListener('mouseenter', onMouseEnter);
-    window.addEventListener('keyup', onKeyUp);
     overlay.addEventListener('click', onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
     window.setTimeout(checkPageViewsCriteria, 1000 );
+    document.addEventListener('mouseleave', onMouseLeave);
+    document.addEventListener('mouseenter', onMouseEnter);
+    document.addEventListener('keyup', onKeyUp);
 
     timers.start();
     window.addEventListener('focus', timers.start);
