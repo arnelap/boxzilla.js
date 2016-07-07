@@ -4,7 +4,6 @@ var EventEmitter = require('wolfy87-eventemitter'),
     Boxzilla = Object.create(EventEmitter.prototype),
     Box = require('./box.js')(Boxzilla),
     Timer = require('./timer.js'),
-    css = require('./css.js'),
     boxes = {},
     windowHeight, overlay,
     exitIntentDelayTimer, exitIntentTriggered,
@@ -180,16 +179,7 @@ Boxzilla.init = function() {
 
     // add overlay element to dom
     overlay = document.createElement('div');
-    css(overlay, {
-        'display': 'none',
-        'position': 'fixed',
-        'background': 'rgba(0,0,0,0.65)',
-        'width': '100%',
-        'height': '100%',
-        'z-index': 99999,
-        'top': 0,
-        'left': 0
-    });
+    overlay.style.display = 'none';
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
 
