@@ -1158,7 +1158,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
             // insert styles into DOM
             var styles = require('./styles.js');
-            console.log(styles);
             var styleElement = document.createElement('style');
             styleElement.setAttribute("type", "text/css");
             styleElement.innerHTML = styles;
