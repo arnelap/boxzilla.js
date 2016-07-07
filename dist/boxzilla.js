@@ -1,1699 +1,1303 @@
-'use strict';
+"use strict";
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-(function (e, a) {
-	for (var i in a) {
-		e[i] = a[i];
-	}
-})(exports, /******/function (modules) {
-	// webpackBootstrap
-	/******/ // The module cache
-	/******/var installedModules = {};
-
-	/******/ // The require function
-	/******/function __webpack_require__(moduleId) {
-
-		/******/ // Check if module is in cache
-		/******/if (installedModules[moduleId])
-			/******/return installedModules[moduleId].exports;
-
-		/******/ // Create a new module (and put it into the cache)
-		/******/var module = installedModules[moduleId] = {
-			/******/exports: {},
-			/******/id: moduleId,
-			/******/loaded: false
-			/******/ };
-
-		/******/ // Execute the module function
-		/******/modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
-		/******/ // Flag the module as loaded
-		/******/module.loaded = true;
-
-		/******/ // Return the exports of the module
-		/******/return module.exports;
-		/******/
-	}
-
-	/******/ // expose the modules object (__webpack_modules__)
-	/******/__webpack_require__.m = modules;
-
-	/******/ // expose the module cache
-	/******/__webpack_require__.c = installedModules;
-
-	/******/ // __webpack_public_path__
-	/******/__webpack_require__.p = "";
-
-	/******/ // Load entry module and return exports
-	/******/return __webpack_require__(0);
-	/******/
-}(
-/************************************************************************/
-/******/[
-/* 0 */
-/***/function (module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var EventEmitter = __webpack_require__(1),
-	    Boxzilla = Object.create(EventEmitter.prototype),
-	    Box = __webpack_require__(2)(Boxzilla),
-	    Timer = __webpack_require__(4),
-	    css = __webpack_require__(5),
-	    boxes = {},
-	    windowHeight,
-	    overlay,
-	    exitIntentDelayTimer,
-	    exitIntentTriggered,
-	    siteTimer,
-	    pageTimer,
-	    pageViews;
-
-	__webpack_require__(6);
-
-	function each(obj, callback) {
-		for (var key in obj) {
-			if (!obj.hasOwnProperty(key)) continue;
-			callback(obj[key]);
-		}
-	}
-
-	function throttle(fn, threshhold, scope) {
-		threshhold || (threshhold = 250);
-		var last, deferTimer;
-		return function () {
-			var context = scope || this;
-
-			var now = +new Date(),
-			    args = arguments;
-			if (last && now < last + threshhold) {
-				// hold on to it
-				clearTimeout(deferTimer);
-				deferTimer = setTimeout(function () {
-					last = now;
-					fn.apply(context, args);
-				}, threshhold);
-			} else {
-				last = now;
-				fn.apply(context, args);
-			}
-		};
-	}
-
-	// "keyup" listener
-	function onKeyUp(e) {
-		if (e.keyCode == 27) {
-			Boxzilla.dismiss();
-		}
-	}
-
-	// check "pageviews" criteria for each box
-	function checkPageViewsCriteria() {
-		each(boxes, function (box) {
-			if (!box.mayAutoShow()) {
-				return;
-			}
-
-			if (box.config.trigger.method === 'pageviews' && pageViews >= box.config.trigger.value) {
-				box.trigger();
-			}
-		});
-	}
-
-	// check time trigger criteria for each box
-	function checkTimeCriteria() {
-		each(boxes, function (box) {
-			if (!box.mayAutoShow()) {
-				return;
-			}
-
-			// check "time on site" trigger
-			if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value) {
-				box.trigger();
-			}
-
-			// check "time on page" trigger
-			if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value) {
-				box.trigger();
-			}
-		});
-	}
-
-	// check triggerHeight criteria for all boxes
-	function checkHeightCriteria() {
-		var scrollY = window.scrollY;
-		var scrollHeight = scrollY + windowHeight * 0.667;
-
-		each(boxes, function (box) {
-			if (!box.mayAutoShow() || box.triggerHeight <= 0) {
-				return;
-			}
-
-			if (scrollHeight > box.triggerHeight) {
-				box.trigger();
-			} else if (box.mayRehide()) {
-				box.hide();
-			}
-		});
-	}
-
-	// recalculate heights and variables based on height
-	function recalculateHeights() {
-		windowHeight = window.innerHeight;
-
-		each(boxes, function (box) {
-			box.setCustomBoxStyling();
-		});
-	}
-
-	function onOverlayClick(e) {
-		var x = e.offsetX;
-		var y = e.offsetY;
-
-		// calculate if click was near a box to avoid closing it (click error margin)
-		each(boxes, function (box) {
-			var rect = box.element.getBoundingClientRect();
-			var margin = 100 + window.innerWidth * 0.05;
-
-			// if click was not anywhere near box, dismiss it.
-			if (x < rect.left - margin || x > rect.right + margin || y < rect.top - margin || y > rect.bottom + margin) {
-				box.dismiss();
-			}
-		});
-	}
-
-	function triggerExitIntent() {
-		if (exitIntentTriggered) return;
-
-		each(boxes, function (box) {
-			if (box.mayAutoShow() && box.config.trigger.method === 'exit_intent') {
-				box.trigger();
-			}
-		});
-
-		exitIntentTriggered = true;
-	}
-
-	function onMouseLeave(e) {
-		var delay = 400;
-
-		// did mouse leave at top of window?
-		if (e.clientY <= 0) {
-			exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
-		}
-	}
-
-	function onMouseEnter() {
-		if (exitIntentDelayTimer) {
-			window.clearInterval(exitIntentDelayTimer);
-			exitIntentDelayTimer = null;
-		}
-	}
-
-	var timers = {
-		start: function start() {
-			var sessionTime = sessionStorage.getItem('boxzilla_timer');
-			if (sessionTime) siteTimer.time = sessionTime;
-			siteTimer.start();
-			pageTimer.start();
-		},
-		stop: function stop() {
-			sessionStorage.setItem('boxzilla_timer', siteTimer.time);
-			siteTimer.stop();
-			pageTimer.stop();
-		}
-	};
-
-	// initialise & add event listeners
-	Boxzilla.init = function () {
-		siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
-		pageTimer = new Timer(0);
-		pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
-		windowHeight = window.innerHeight;
-
-		// add overlay element to dom
-		overlay = document.createElement('div');
-		css(overlay, {
-			'display': 'none',
-			'position': 'fixed',
-			'background': 'rgba(0,0,0,0.65)',
-			'width': '100%',
-			'height': '100%',
-			'z-index': 99999,
-			'top': 0,
-			'left': 0
-		});
-		overlay.id = 'boxzilla-overlay';
-		document.body.appendChild(overlay);
-
-		// event binds
-		window.addEventListener('scroll', throttle(checkHeightCriteria));
-		window.addEventListener('resize', throttle(recalculateHeights));
-		window.addEventListener('load', recalculateHeights);
-		overlay.addEventListener('click', onOverlayClick);
-		window.setInterval(checkTimeCriteria, 1000);
-		window.setTimeout(checkPageViewsCriteria, 1000);
-		document.addEventListener('mouseleave', onMouseLeave);
-		document.addEventListener('mouseenter', onMouseEnter);
-		document.addEventListener('keyup', onKeyUp);
-
-		timers.start();
-		window.addEventListener('focus', timers.start);
-		window.addEventListener('beforeunload', function () {
-			timers.stop();
-			sessionStorage.setItem('boxzilla_pageviews', ++pageViews);
-		});
-		window.addEventListener('blur', timers.stop);
-
-		Boxzilla.trigger('ready');
-	};
-
-	/**
-  * Create a new Box
-  *
-  * @param string id
-  * @param object opts
-  *
-  * @returns Box
-  */
-	Boxzilla.create = function (id, opts) {
-		boxes[id] = new Box(id, opts);
-		return boxes[id];
-	};
-
-	// dismiss a single box (or all by omitting id param)
-	Boxzilla.dismiss = function (id) {
-		// if no id given, dismiss all current open boxes
-		if (typeof id === "undefined") {
-			each(boxes, function (box) {
-				box.dismiss();
-			});
-		} else if (_typeof(boxes[id]) === "object") {
-			boxes[id].dismiss();
-		}
-	};
-
-	Boxzilla.hide = function (id) {
-		if (typeof id === "undefined") {
-			each(boxes, function (box) {
-				box.hide();
-			});
-		} else if (_typeof(boxes[id]) === "object") {
-			boxes[id].hide();
-		}
-	};
-
-	Boxzilla.show = function (id) {
-		if (typeof id === "undefined") {
-			each(boxes, function (box) {
-				box.show();
-			});
-		} else if (_typeof(boxes[id]) === "object") {
-			boxes[id].show();
-		}
-	};
-
-	Boxzilla.toggle = function (id) {
-		if (typeof id === "undefined") {
-			each(boxes, function (box) {
-				box.toggle();
-			});
-		} else if (_typeof(boxes[id]) === "object") {
-			boxes[id].toggle();
-		}
-	};
-
-	window.Boxzilla = Boxzilla;
-
-	if (typeof module !== 'undefined' && module.exports) {
-		module.exports = Boxzilla;
-	}
-
-	/***/
-},
-/* 1 */
-/***/function (module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_RESULT__; /*!
-                                    * EventEmitter v4.2.11 - git.io/ee
-                                    * Unlicense - http://unlicense.org/
-                                    * Oliver Caldwell - http://oli.me.uk/
-                                    * @preserve
-                                    */
-
-	;(function () {
-		'use strict';
-
-		/**
-   * Class for managing events.
-   * Can be extended to provide event functionality in other classes.
-   *
-   * @class EventEmitter Manages event registering and emitting.
-   */
-
-		function EventEmitter() {}
-
-		// Shortcuts to improve speed and size
-		var proto = EventEmitter.prototype;
-		var exports = this;
-		var originalGlobalValue = exports.EventEmitter;
-
-		/**
-   * Finds the index of the listener for the event in its storage array.
-   *
-   * @param {Function[]} listeners Array of listeners to search through.
-   * @param {Function} listener Method to look for.
-   * @return {Number} Index of the specified listener, -1 if not found
-   * @api private
-   */
-		function indexOfListener(listeners, listener) {
-			var i = listeners.length;
-			while (i--) {
-				if (listeners[i].listener === listener) {
-					return i;
-				}
-			}
-
-			return -1;
-		}
-
-		/**
-   * Alias a method while keeping the context correct, to allow for overwriting of target method.
-   *
-   * @param {String} name The name of the target method.
-   * @return {Function} The aliased method
-   * @api private
-   */
-		function alias(name) {
-			return function aliasClosure() {
-				return this[name].apply(this, arguments);
-			};
-		}
-
-		/**
-   * Returns the listener array for the specified event.
-   * Will initialise the event object and listener arrays if required.
-   * Will return an object if you use a regex search. The object contains keys for each matched event. So /ba[rz]/ might return an object containing bar and baz. But only if you have either defined them with defineEvent or added some listeners to them.
-   * Each property in the object response is an array of listener functions.
-   *
-   * @param {String|RegExp} evt Name of the event to return the listeners from.
-   * @return {Function[]|Object} All listener functions for the event.
-   */
-		proto.getListeners = function getListeners(evt) {
-			var events = this._getEvents();
-			var response;
-			var key;
-
-			// Return a concatenated array of all matching events if
-			// the selector is a regular expression.
-			if (evt instanceof RegExp) {
-				response = {};
-				for (key in events) {
-					if (events.hasOwnProperty(key) && evt.test(key)) {
-						response[key] = events[key];
-					}
-				}
-			} else {
-				response = events[evt] || (events[evt] = []);
-			}
-
-			return response;
-		};
-
-		/**
-   * Takes a list of listener objects and flattens it into a list of listener functions.
-   *
-   * @param {Object[]} listeners Raw listener objects.
-   * @return {Function[]} Just the listener functions.
-   */
-		proto.flattenListeners = function flattenListeners(listeners) {
-			var flatListeners = [];
-			var i;
-
-			for (i = 0; i < listeners.length; i += 1) {
-				flatListeners.push(listeners[i].listener);
-			}
-
-			return flatListeners;
-		};
-
-		/**
-   * Fetches the requested listeners via getListeners but will always return the results inside an object. This is mainly for internal use but others may find it useful.
-   *
-   * @param {String|RegExp} evt Name of the event to return the listeners from.
-   * @return {Object} All listener functions for an event in an object.
-   */
-		proto.getListenersAsObject = function getListenersAsObject(evt) {
-			var listeners = this.getListeners(evt);
-			var response;
-
-			if (listeners instanceof Array) {
-				response = {};
-				response[evt] = listeners;
-			}
-
-			return response || listeners;
-		};
-
-		/**
-   * Adds a listener function to the specified event.
-   * The listener will not be added if it is a duplicate.
-   * If the listener returns true then it will be removed after it is called.
-   * If you pass a regular expression as the event name then the listener will be added to all events that match it.
-   *
-   * @param {String|RegExp} evt Name of the event to attach the listener to.
-   * @param {Function} listener Method to be called when the event is emitted. If the function returns true then it will be removed after calling.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.addListener = function addListener(evt, listener) {
-			var listeners = this.getListenersAsObject(evt);
-			var listenerIsWrapped = (typeof listener === 'undefined' ? 'undefined' : _typeof(listener)) === 'object';
-			var key;
-
-			for (key in listeners) {
-				if (listeners.hasOwnProperty(key) && indexOfListener(listeners[key], listener) === -1) {
-					listeners[key].push(listenerIsWrapped ? listener : {
-						listener: listener,
-						once: false
-					});
-				}
-			}
-
-			return this;
-		};
-
-		/**
-   * Alias of addListener
-   */
-		proto.on = alias('addListener');
-
-		/**
-   * Semi-alias of addListener. It will add a listener that will be
-   * automatically removed after its first execution.
-   *
-   * @param {String|RegExp} evt Name of the event to attach the listener to.
-   * @param {Function} listener Method to be called when the event is emitted. If the function returns true then it will be removed after calling.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.addOnceListener = function addOnceListener(evt, listener) {
-			return this.addListener(evt, {
-				listener: listener,
-				once: true
-			});
-		};
-
-		/**
-   * Alias of addOnceListener.
-   */
-		proto.once = alias('addOnceListener');
-
-		/**
-   * Defines an event name. This is required if you want to use a regex to add a listener to multiple events at once. If you don't do this then how do you expect it to know what event to add to? Should it just add to every possible match for a regex? No. That is scary and bad.
-   * You need to tell it what event names should be matched by a regex.
-   *
-   * @param {String} evt Name of the event to create.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.defineEvent = function defineEvent(evt) {
-			this.getListeners(evt);
-			return this;
-		};
-
-		/**
-   * Uses defineEvent to define multiple events.
-   *
-   * @param {String[]} evts An array of event names to define.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.defineEvents = function defineEvents(evts) {
-			for (var i = 0; i < evts.length; i += 1) {
-				this.defineEvent(evts[i]);
-			}
-			return this;
-		};
-
-		/**
-   * Removes a listener function from the specified event.
-   * When passed a regular expression as the event name, it will remove the listener from all events that match it.
-   *
-   * @param {String|RegExp} evt Name of the event to remove the listener from.
-   * @param {Function} listener Method to remove from the event.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.removeListener = function removeListener(evt, listener) {
-			var listeners = this.getListenersAsObject(evt);
-			var index;
-			var key;
-
-			for (key in listeners) {
-				if (listeners.hasOwnProperty(key)) {
-					index = indexOfListener(listeners[key], listener);
-
-					if (index !== -1) {
-						listeners[key].splice(index, 1);
-					}
-				}
-			}
-
-			return this;
-		};
-
-		/**
-   * Alias of removeListener
-   */
-		proto.off = alias('removeListener');
-
-		/**
-   * Adds listeners in bulk using the manipulateListeners method.
-   * If you pass an object as the second argument you can add to multiple events at once. The object should contain key value pairs of events and listeners or listener arrays. You can also pass it an event name and an array of listeners to be added.
-   * You can also pass it a regular expression to add the array of listeners to all events that match it.
-   * Yeah, this function does quite a bit. That's probably a bad thing.
-   *
-   * @param {String|Object|RegExp} evt An event name if you will pass an array of listeners next. An object if you wish to add to multiple events at once.
-   * @param {Function[]} [listeners] An optional array of listener functions to add.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.addListeners = function addListeners(evt, listeners) {
-			// Pass through to manipulateListeners
-			return this.manipulateListeners(false, evt, listeners);
-		};
-
-		/**
-   * Removes listeners in bulk using the manipulateListeners method.
-   * If you pass an object as the second argument you can remove from multiple events at once. The object should contain key value pairs of events and listeners or listener arrays.
-   * You can also pass it an event name and an array of listeners to be removed.
-   * You can also pass it a regular expression to remove the listeners from all events that match it.
-   *
-   * @param {String|Object|RegExp} evt An event name if you will pass an array of listeners next. An object if you wish to remove from multiple events at once.
-   * @param {Function[]} [listeners] An optional array of listener functions to remove.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.removeListeners = function removeListeners(evt, listeners) {
-			// Pass through to manipulateListeners
-			return this.manipulateListeners(true, evt, listeners);
-		};
-
-		/**
-   * Edits listeners in bulk. The addListeners and removeListeners methods both use this to do their job. You should really use those instead, this is a little lower level.
-   * The first argument will determine if the listeners are removed (true) or added (false).
-   * If you pass an object as the second argument you can add/remove from multiple events at once. The object should contain key value pairs of events and listeners or listener arrays.
-   * You can also pass it an event name and an array of listeners to be added/removed.
-   * You can also pass it a regular expression to manipulate the listeners of all events that match it.
-   *
-   * @param {Boolean} remove True if you want to remove listeners, false if you want to add.
-   * @param {String|Object|RegExp} evt An event name if you will pass an array of listeners next. An object if you wish to add/remove from multiple events at once.
-   * @param {Function[]} [listeners] An optional array of listener functions to add/remove.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.manipulateListeners = function manipulateListeners(remove, evt, listeners) {
-			var i;
-			var value;
-			var single = remove ? this.removeListener : this.addListener;
-			var multiple = remove ? this.removeListeners : this.addListeners;
-
-			// If evt is an object then pass each of its properties to this method
-			if ((typeof evt === 'undefined' ? 'undefined' : _typeof(evt)) === 'object' && !(evt instanceof RegExp)) {
-				for (i in evt) {
-					if (evt.hasOwnProperty(i) && (value = evt[i])) {
-						// Pass the single listener straight through to the singular method
-						if (typeof value === 'function') {
-							single.call(this, i, value);
-						} else {
-							// Otherwise pass back to the multiple function
-							multiple.call(this, i, value);
-						}
-					}
-				}
-			} else {
-				// So evt must be a string
-				// And listeners must be an array of listeners
-				// Loop over it and pass each one to the multiple method
-				i = listeners.length;
-				while (i--) {
-					single.call(this, evt, listeners[i]);
-				}
-			}
-
-			return this;
-		};
-
-		/**
-   * Removes all listeners from a specified event.
-   * If you do not specify an event then all listeners will be removed.
-   * That means every event will be emptied.
-   * You can also pass a regex to remove all events that match it.
-   *
-   * @param {String|RegExp} [evt] Optional name of the event to remove all listeners for. Will remove from every event if not passed.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.removeEvent = function removeEvent(evt) {
-			var type = typeof evt === 'undefined' ? 'undefined' : _typeof(evt);
-			var events = this._getEvents();
-			var key;
-
-			// Remove different things depending on the state of evt
-			if (type === 'string') {
-				// Remove all listeners for the specified event
-				delete events[evt];
-			} else if (evt instanceof RegExp) {
-				// Remove all events matching the regex.
-				for (key in events) {
-					if (events.hasOwnProperty(key) && evt.test(key)) {
-						delete events[key];
-					}
-				}
-			} else {
-				// Remove all listeners in all events
-				delete this._events;
-			}
-
-			return this;
-		};
-
-		/**
-   * Alias of removeEvent.
-   *
-   * Added to mirror the node API.
-   */
-		proto.removeAllListeners = alias('removeEvent');
-
-		/**
-   * Emits an event of your choice.
-   * When emitted, every listener attached to that event will be executed.
-   * If you pass the optional argument array then those arguments will be passed to every listener upon execution.
-   * Because it uses `apply`, your array of arguments will be passed as if you wrote them out separately.
-   * So they will not arrive within the array on the other side, they will be separate.
-   * You can also pass a regular expression to emit to all events that match it.
-   *
-   * @param {String|RegExp} evt Name of the event to emit and execute listeners for.
-   * @param {Array} [args] Optional array of arguments to be passed to each listener.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.emitEvent = function emitEvent(evt, args) {
-			var listenersMap = this.getListenersAsObject(evt);
-			var listeners;
-			var listener;
-			var i;
-			var key;
-			var response;
-
-			for (key in listenersMap) {
-				if (listenersMap.hasOwnProperty(key)) {
-					listeners = listenersMap[key].slice(0);
-					i = listeners.length;
-
-					while (i--) {
-						// If the listener returns true then it shall be removed from the event
-						// The function is executed either with a basic call or an apply if there is an args array
-						listener = listeners[i];
-
-						if (listener.once === true) {
-							this.removeListener(evt, listener.listener);
-						}
-
-						response = listener.listener.apply(this, args || []);
-
-						if (response === this._getOnceReturnValue()) {
-							this.removeListener(evt, listener.listener);
-						}
-					}
-				}
-			}
-
-			return this;
-		};
-
-		/**
-   * Alias of emitEvent
-   */
-		proto.trigger = alias('emitEvent');
-
-		/**
-   * Subtly different from emitEvent in that it will pass its arguments on to the listeners, as opposed to taking a single array of arguments to pass on.
-   * As with emitEvent, you can pass a regex in place of the event name to emit to all events that match it.
-   *
-   * @param {String|RegExp} evt Name of the event to emit and execute listeners for.
-   * @param {...*} Optional additional arguments to be passed to each listener.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.emit = function emit(evt) {
-			var args = Array.prototype.slice.call(arguments, 1);
-			return this.emitEvent(evt, args);
-		};
-
-		/**
-   * Sets the current value to check against when executing listeners. If a
-   * listeners return value matches the one set here then it will be removed
-   * after execution. This value defaults to true.
-   *
-   * @param {*} value The new value to check for when executing listeners.
-   * @return {Object} Current instance of EventEmitter for chaining.
-   */
-		proto.setOnceReturnValue = function setOnceReturnValue(value) {
-			this._onceReturnValue = value;
-			return this;
-		};
-
-		/**
-   * Fetches the current value to check against when executing listeners. If
-   * the listeners return value matches this one then it should be removed
-   * automatically. It will return true by default.
-   *
-   * @return {*|Boolean} The current value to check for or the default, true.
-   * @api private
-   */
-		proto._getOnceReturnValue = function _getOnceReturnValue() {
-			if (this.hasOwnProperty('_onceReturnValue')) {
-				return this._onceReturnValue;
-			} else {
-				return true;
-			}
-		};
-
-		/**
-   * Fetches the events object and creates one if required.
-   *
-   * @return {Object} The events storage object.
-   * @api private
-   */
-		proto._getEvents = function _getEvents() {
-			return this._events || (this._events = {});
-		};
-
-		/**
-   * Reverts the global {@link EventEmitter} to its previous value and returns a reference to this version.
-   *
-   * @return {Function} Non conflicting EventEmitter class.
-   */
-		EventEmitter.noConflict = function noConflict() {
-			exports.EventEmitter = originalGlobalValue;
-			return EventEmitter;
-		};
-
-		// Expose the class either via AMD, CommonJS or the global object
-		if (true) {
-			!(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
-				return EventEmitter;
-			}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-		} else if ((typeof module === 'undefined' ? 'undefined' : _typeof(module)) === 'object' && module.exports) {
-			module.exports = EventEmitter;
-		} else {
-			exports.EventEmitter = EventEmitter;
-		}
-	}).call(this);
-
-	/***/
-},
-/* 2 */
-/***/function (module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var defaults = {
-		'animation': 'fade',
-		'rehide': false,
-		'content': '',
-		'cookieTime': 0,
-		'icon': '&times',
-		'minimumScreenWidth': 0,
-		'position': 'center',
-		'testMode': false,
-		'trigger': false,
-		'closable': true
-	},
-	    Boxzilla,
-	    Animator = __webpack_require__(3);
-
-	/**
-  * Merge 2 objects, values of the latter overwriting the former.
-  *
-  * @param obj1
-  * @param obj2
-  * @returns {*}
-  */
-	function merge(obj1, obj2) {
-		var obj3 = {};
-		for (var attrname in obj1) {
-			obj3[attrname] = obj1[attrname];
-		}
-		for (var attrname in obj2) {
-			obj3[attrname] = obj2[attrname];
-		}
-		return obj3;
-	}
-
-	// Box Object
-	var Box = function Box(id, config) {
-		this.id = id;
-
-		// store config values
-		this.config = merge(defaults, config);
-
-		// store ref to overlay
-		this.overlay = document.getElementById('boxzilla-overlay');
-
-		// state
-		this.visible = false;
-		this.closed = false;
-		this.triggered = false;
-		this.triggerHeight = 0;
-		this.cookieSet = false;
-		this.element = null;
-		this.closeIcon = null;
-
-		// if a trigger was given, calculate values once and store
-		if (this.config.trigger) {
-			if (this.config.trigger.method === 'percentage' || this.config.trigger.method === 'element') {
-				this.triggerHeight = this.calculateTriggerHeight();
-			}
-
-			this.cookieSet = this.isCookieSet();
-		}
-
-		// create dom elements for this box
-		this.dom();
-
-		// further initialise the box
-		this.events();
-	};
-
-	// initialise the box
-	Box.prototype.events = function () {
-		var box = this;
-
-		// attach event to "close" icon inside box
-		this.closeIcon && this.closeIcon.addEventListener('click', box.dismiss.bind(this));
-
-		this.element.addEventListener('click', function (e) {
-			if (e.target.tagName === 'A') {
-				Boxzilla.trigger('box.interactions.link', [box, e.target]);
-			}
-		}, false);
-
-		this.element.addEventListener('submit', function (e) {
-			box.setCookie();
-			Boxzilla.trigger('box.interactions.form', [box, e.target]);
-		}, false);
-
-		// listen to all "click" events
-		document.body.addEventListener('click', function (e) {
-
-			// only act on links
-			if (e.target.tagName !== 'A') {
-				return;
-			}
-
-			// check if link href ends with "#boxzilla-{box.id}
-			var needle = "#boxzilla-" + box.id;
-			var haystack = e.target.getAttribute("href");
-			if (haystack && haystack.substring(-needle.length) === needle) {
-				box.toggle();
-				e.preventDefault();
-			}
-		}, false);
-
-		// maybe show box right away
-		if (this.fits() && this.locationHashRefersBox()) {
-			window.addEventListener('load', this.show.bind(this));
-		}
-	};
-
-	// generate dom elements for this box
-	Box.prototype.dom = function () {
-		var wrapper = document.createElement('div');
-		wrapper.className = 'boxzilla-container boxzilla-' + this.config.position + '-container';
-
-		var box = document.createElement('div');
-		box.setAttribute('id', 'boxzilla-' + this.id);
-		box.className = 'boxzilla boxzilla-' + this.id + ' boxzilla-' + this.config.position;
-		box.style.display = 'none';
-		wrapper.appendChild(box);
-
-		var content = document.createElement('div');
-		content.className = 'boxzilla-content';
-		content.innerHTML = this.config.content;
-		box.appendChild(content);
-
-		// remove <script> from box content and append them to the document body
-		var scripts = content.querySelectorAll('script');
-		if (scripts.length) {
-			var script = document.createElement('script');
-			for (var i = 0; i < scripts.length; i++) {
-				script.appendChild(document.createTextNode(scripts[i].text));
-				scripts[i].parentNode.removeChild(scripts[i]);
-			}
-			document.body.appendChild(script);
-		}
-
-		if (this.config.closable && this.config.icon) {
-			var closeIcon = document.createElement('span');
-			closeIcon.className = "boxzilla-close-icon";
-			closeIcon.innerHTML = this.config.icon;
-			box.appendChild(closeIcon);
-			this.closeIcon = closeIcon;
-		}
-
-		document.body.appendChild(wrapper);
-		this.element = box;
-	};
-
-	// set (calculate) custom box styling depending on box options
-	Box.prototype.setCustomBoxStyling = function () {
-
-		// reset element to its initial state
-		var origDisplay = this.element.style.display;
-		this.element.style.display = '';
-		this.element.style.overflowY = 'auto';
-		this.element.style.maxHeight = 'none';
-
-		// get new dimensions
-		var windowHeight = window.innerHeight;
-		var boxHeight = this.element.clientHeight;
-
-		// add scrollbar to box and limit height
-		if (boxHeight > windowHeight) {
-			this.element.style.maxHeight = windowHeight + "px";
-			this.element.style.overflowY = 'scroll';
-		}
-
-		// set new top margin for boxes which are centered
-		if (this.config.position === 'center') {
-			var newTopMargin = (windowHeight - boxHeight) / 2;
-			newTopMargin = newTopMargin >= 0 ? newTopMargin : 0;
-			this.element.style.marginTop = newTopMargin + "px";
-		}
-
-		this.element.style.display = origDisplay;
-	};
-
-	// toggle visibility of the box
-	Box.prototype.toggle = function (show) {
-
-		// revert visibility if no explicit argument is given
-		if (typeof show === "undefined") {
-			show = !this.visible;
-		}
-
-		// is box already at desired visibility?
-		if (show === this.visible) {
-			return false;
-		}
-
-		// is box being animated?
-		if (Animator.animated(this.element)) {
-			return false;
-		}
-
-		// if box should be hidden but is not closable, bail.
-		if (!show && !this.config.closable) {
-			return false;
-		}
-
-		// set new visibility status
-		this.visible = show;
-
-		// calculate new styling rules
-		this.setCustomBoxStyling();
-
-		// trigger event
-		Boxzilla.trigger('box.' + (show ? 'show' : 'hide'), [this]);
-
-		// show or hide box using selected animation
-		if (this.config.position === 'center') {
-			Animator.toggle(this.overlay, "fade");
-		}
-
-		Animator.toggle(this.element, this.config.animation);
-
-		// focus on first input field in box
-		var firstInput = this.element.querySelector('input, textarea');
-		if (firstInput) {
-			firstInput.focus();
-		}
-
-		return true;
-	};
-
-	// show the box
-	Box.prototype.show = function () {
-		return this.toggle(true);
-	};
-
-	// hide the box
-	Box.prototype.hide = function () {
-		return this.toggle(false);
-	};
-
-	// calculate trigger height
-	Box.prototype.calculateTriggerHeight = function () {
-		var triggerHeight = 0;
-
-		if (this.config.trigger.method === 'element') {
-			var triggerElement = document.body.querySelector(this.config.trigger.value);
-			if (triggerElement) {
-				var offset = triggerElement.getBoundingClientRect();
-				triggerHeight = offset.top;
-			}
-		} else if (this.config.trigger.method === 'percentage') {
-			triggerHeight = this.config.trigger.value / 100 * document.body.clientHeight;
-		}
-
-		return triggerHeight;
-	};
-
-	// set cookie that disables automatically showing the box
-	Box.prototype.setCookie = function () {
-		// do nothing if cookieTime evaluates to false
-		if (!this.config.cookieTime) {
-			return;
-		}
-
-		var expiryDate = new Date();
-		expiryDate.setDate(expiryDate.getDate() + this.config.cookieTime);
-		document.cookie = 'boxzilla_box_' + this.id + '=true; expires=' + expiryDate.toUTCString() + '; path=/';
-	};
-
-	// checks whether window.location.hash equals the box element ID or that of any element inside the box
-	Box.prototype.locationHashRefersBox = function () {
-
-		if (!window.location.hash || 0 === window.location.hash.length) {
-			return false;
-		}
-
-		var elementId = window.location.hash.substring(1);
-		if (elementId === this.element.id) {
-			return true;
-		} else if (this.element.querySelector('#' + elementId)) {
-			return true;
-		}
-
-		return false;
-	};
-
-	Box.prototype.fits = function () {
-		if (this.config.minimumScreenWidth <= 0) {
-			return true;
-		}
-
-		return window.innerWidth > this.config.minimumScreenWidth;
-	};
-
-	// is this box enabled?
-	Box.prototype.mayAutoShow = function () {
-
-		// don't show if box was closed (dismissed) before
-		if (this.closed) {
-			return false;
-		}
-
-		// check if box fits on given minimum screen width
-		if (!this.fits()) {
-			return false;
-		}
-
-		// if trigger empty or error in calculating triggerHeight, return false
-		if (!this.config.trigger) {
-			return false;
-		}
-
-		// rely on cookie value (show if not set, don't show if set)
-		return !this.cookieSet;
-	};
-
-	Box.prototype.mayRehide = function () {
-		return this.config.rehide && this.triggered;
-	};
-
-	Box.prototype.isCookieSet = function () {
-		// always show on test mode
-		if (this.config.testMode) {
-			return false;
-		}
-
-		// check for cookie
-		if (!this.config.cookieTime) {
-			return false;
-		}
-
-		var cookieSet = document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'boxzilla_box_' + this.id + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1") === "true";
-		return cookieSet;
-	};
-
-	Box.prototype.trigger = function () {
-		var shown = this.show();
-		if (shown) {
-			this.triggered = true;
-		}
-	};
-
-	Box.prototype.dismiss = function () {
-		this.hide();
-		this.setCookie();
-		this.closed = true;
-		Boxzilla.trigger('box.dismiss', [this]);
-	};
-
-	module.exports = function (_Boxzilla) {
-		Boxzilla = _Boxzilla;
-		return Box;
-	};
-
-	/***/
-},
-/* 3 */
-/***/function (module, exports) {
-
-	var duration = 320;
-
-	function css(element, styles) {
-		for (var property in styles) {
-			element.style[property] = styles[property];
-		}
-	}
-
-	function initObjectProperties(properties, value) {
-		var newObject = {};
-		for (var i = 0; i < properties.length; i++) {
-			newObject[properties[i]] = value;
-		}
-		return newObject;
-	}
-
-	function copyObjectProperties(properties, object) {
-		var newObject = {};
-		for (var i = 0; i < properties.length; i++) {
-			newObject[properties[i]] = object[properties[i]];
-		}
-		return newObject;
-	}
-
-	/**
-  * Checks if the given element is currently being animated.
-  *
-  * @param element
-  * @returns {boolean}
-  */
-	function animated(element) {
-		return !!element.getAttribute('data-animated');
-	}
-
-	/**
-  * Toggles the element using the given animation.
-  *
-  * @param element
-  * @param animation Either "fade" or "slide"
-  */
-	function toggle(element, animation) {
-		var nowVisible = element.style.display != 'none' || element.offsetLeft > 0;
-
-		// create clone for reference
-		var clone = element.cloneNode(true);
-
-		// store attribute so everyone knows we're animating this element
-		element.setAttribute('data-animated', "true");
-
-		// toggle element visiblity right away if we're making something visible
-		if (!nowVisible) {
-			element.style.display = '';
-		}
-
-		var hiddenStyles, visibleStyles;
-
-		// animate properties
-		if (animation === 'slide') {
-			hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
-			visibleStyles = {};
-
-			if (!nowVisible) {
-				var computedStyles = window.getComputedStyle(element);
-				visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles);
-				css(element, hiddenStyles);
-			}
-
-			// don't show a scrollbar during animation
-			element.style.overflowY = 'hidden';
-			animate(element, nowVisible ? hiddenStyles : visibleStyles);
-		} else {
-			hiddenStyles = { opacity: 0 };
-			visibleStyles = { opacity: 1 };
-			if (!nowVisible) {
-				css(element, hiddenStyles);
-			}
-
-			animate(element, nowVisible ? hiddenStyles : visibleStyles);
-		}
-
-		// clean-up after animation
-		window.setTimeout(function () {
-			element.removeAttribute('data-animated');
-			element.setAttribute('style', clone.getAttribute('style'));
-			element.style.display = nowVisible ? 'none' : '';
-		}, duration * 1.2);
-	}
-
-	function animate(element, targetStyles) {
-		var last = +new Date();
-		var initialStyles = window.getComputedStyle(element);
-		var currentStyles = {};
-		var propSteps = {};
-
-		for (var property in targetStyles) {
-			// make sure we have an object filled with floats
-			targetStyles[property] = parseFloat(targetStyles[property]);
-
-			// calculate step size & current value
-			var to = targetStyles[property];
-			var current = parseFloat(initialStyles[property]);
-			propSteps[property] = (to - current) / duration; // points per second
-			currentStyles[property] = current;
-		}
-
-		var tick = function tick() {
-			var now = +new Date();
-			var timeSinceLastTick = now - last;
-			var done = true;
-
-			var step, to, increment, newValue;
-			for (var property in targetStyles) {
-				step = propSteps[property];
-				to = targetStyles[property];
-				increment = step * timeSinceLastTick;
-				newValue = currentStyles[property] + increment;
-
-				if (step > 0 && newValue >= to || step < 0 && newValue <= to) {
-					newValue = to;
-				} else {
-					done = false;
-				}
-
-				// store new value
-				currentStyles[property] = newValue;
-
-				var suffix = property !== "opacity" ? "px" : "";
-				element.style[property] = newValue + suffix;
-			}
-
-			last = +new Date();
-
-			// keep going until we're done for all props
-			if (!done) {
-				window.requestAnimationFrame && requestAnimationFrame(tick) || setTimeout(tick, 32);
-			}
-		};
-
-		tick();
-	}
-
-	module.exports = {
-		'toggle': toggle,
-		'animated': animated
-	};
-
-	/***/
-},
-/* 4 */
-/***/function (module, exports) {
-
-	'use strict';
-
-	var Timer = function Timer(start) {
-		this.time = start;
-		this.interval = 0;
-	};
-
-	Timer.prototype.tick = function () {
-		this.time++;
-	};
-
-	Timer.prototype.start = function () {
-		if (!this.interval) {
-			this.interval = window.setInterval(this.tick.bind(this), 1000);
-		}
-	};
-
-	Timer.prototype.stop = function () {
-		window.clearInterval(this.interval);
-		this.interval = 0;
-	};
-
-	module.exports = Timer;
-
-	/***/
-},
-/* 5 */
-/***/function (module, exports) {
-
-	function camelCase(string) {
-		return string.replace('-', '');
-	}
-
-	function css(element, styles) {
-		for (var prop in styles) {
-			element.style[camelCase(prop)] = styles[prop];
-		}
-	}
-
-	module.exports = css;
-
-	/***/
-},
-/* 6 */
-/***/function (module, exports, __webpack_require__) {
-
-	// style-loader: Adds some css to the DOM by adding a <style> tag
-
-	// load the styles
-	var content = __webpack_require__(7);
-	if (typeof content === 'string') content = [[module.id, content, '']];
-	// add the styles to the DOM
-	var update = __webpack_require__(9)(content, {});
-	if (content.locals) module.exports = content.locals;
-	// Hot Module Replacement
-	if (false) {
-		// When the styles change, update the <style> tags
-		if (!content.locals) {
-			module.hot.accept("!!./../node_modules/css-loader/index.js!./styles.css", function () {
-				var newContent = require("!!./../node_modules/css-loader/index.js!./styles.css");
-				if (typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-				update(newContent);
-			});
-		}
-		// When the module is disposed, remove the <style> tags
-		module.hot.dispose(function () {
-			update();
-		});
-	}
-
-	/***/
-},
-/* 7 */
-/***/function (module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(8)();
-	// imports
-
-	// module
-	exports.push([module.id, ".boxzilla-center-container {\n    position: fixed;\n    top: 0;\n    left: 0;\n    right: 0;\n    height: 0;\n    text-align: center;\n    z-index: 999999;\n    line-height: 0; }\n\n/* reset some properties like \"line-height\" because of container line-height hack */\n.boxzilla-center-container .boxzilla {\n    display: inline-block;\n    text-align: left;\n    position: relative;\n    line-height: normal; }\n\n.boxzilla {\n    position: fixed;\n    z-index: 999999;\n    -webkit-box-sizing: border-box;\n    -moz-box-sizing: border-box;\n    box-sizing: border-box;\n    background: white;\n    padding: 25px; }\n.boxzilla.boxzilla-top-left {\n    top: 0;\n    left: 0; }\n.boxzilla.boxzilla-top-right {\n    top: 0;\n    right: 0; }\n.boxzilla.boxzilla-bottom-left {\n    bottom: 0;\n    left: 0; }\n.boxzilla.boxzilla-bottom-right {\n    bottom: 0;\n    right: 0; }\n\n/* remove top & bottom margin from last child element */\n.boxzilla-content > *:first-child {\n    margin-top: 0;\n    padding-top: 0; }\n\n.boxzilla-content > *:last-child {\n    margin-bottom: 0;\n    padding-bottom: 0; }\n\n.boxzilla-close-icon {\n    position: absolute;\n    right: 0;\n    top: 0;\n    text-align: center;\n    padding: 6px;\n    cursor: pointer;\n    -webkit-appearance: none;\n    font-size: 28px;\n    font-weight: bold;\n    line-height: 20px;\n    color: #000;\n    opacity: .5; }\n.boxzilla-close-icon:hover, .boxzilla-close-icon:focus {\n    opacity: .8; }\n", ""]);
-
-	// exports
-
-	/***/
-},
-/* 8 */
-/***/function (module, exports) {
-
-	/*
- 	MIT License http://www.opensource.org/licenses/mit-license.php
- 	Author Tobias Koppers @sokra
- */
-	// css base code, injected by the css-loader
-	module.exports = function () {
-		var list = [];
-
-		// return the list of modules as css string
-		list.toString = function toString() {
-			var result = [];
-			for (var i = 0; i < this.length; i++) {
-				var item = this[i];
-				if (item[2]) {
-					result.push("@media " + item[2] + "{" + item[1] + "}");
-				} else {
-					result.push(item[1]);
-				}
-			}
-			return result.join("");
-		};
-
-		// import a list of modules into the list
-		list.i = function (modules, mediaQuery) {
-			if (typeof modules === "string") modules = [[null, modules, ""]];
-			var alreadyImportedModules = {};
-			for (var i = 0; i < this.length; i++) {
-				var id = this[i][0];
-				if (typeof id === "number") alreadyImportedModules[id] = true;
-			}
-			for (i = 0; i < modules.length; i++) {
-				var item = modules[i];
-				// skip already imported module
-				// this implementation is not 100% perfect for weird media query combinations
-				//  when a module is imported multiple times with different media queries.
-				//  I hope this will never occur (Hey this way we have smaller bundles)
-				if (typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-					if (mediaQuery && !item[2]) {
-						item[2] = mediaQuery;
-					} else if (mediaQuery) {
-						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-					}
-					list.push(item);
-				}
-			}
-		};
-		return list;
-	};
-
-	/***/
-},
-/* 9 */
-/***/function (module, exports, __webpack_require__) {
-
-	/*
- 	MIT License http://www.opensource.org/licenses/mit-license.php
- 	Author Tobias Koppers @sokra
- */
-	var stylesInDom = {},
-	    memoize = function memoize(fn) {
-		var memo;
-		return function () {
-			if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-			return memo;
-		};
-	},
-	    isOldIE = memoize(function () {
-		return (/msie [6-9]\b/.test(window.navigator.userAgent.toLowerCase())
-		);
-	}),
-	    getHeadElement = memoize(function () {
-		return document.head || document.getElementsByTagName("head")[0];
-	}),
-	    singletonElement = null,
-	    singletonCounter = 0,
-	    styleElementsInsertedAtTop = [];
-
-	module.exports = function (list, options) {
-		if (false) {
-			if ((typeof document === 'undefined' ? 'undefined' : _typeof(document)) !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-		}
-
-		options = options || {};
-		// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-		// tags it will allow on a page
-		if (typeof options.singleton === "undefined") options.singleton = isOldIE();
-
-		// By default, add <style> tags to the bottom of <head>.
-		if (typeof options.insertAt === "undefined") options.insertAt = "bottom";
-
-		var styles = listToStyles(list);
-		addStylesToDom(styles, options);
-
-		return function update(newList) {
-			var mayRemove = [];
-			for (var i = 0; i < styles.length; i++) {
-				var item = styles[i];
-				var domStyle = stylesInDom[item.id];
-				domStyle.refs--;
-				mayRemove.push(domStyle);
-			}
-			if (newList) {
-				var newStyles = listToStyles(newList);
-				addStylesToDom(newStyles, options);
-			}
-			for (var i = 0; i < mayRemove.length; i++) {
-				var domStyle = mayRemove[i];
-				if (domStyle.refs === 0) {
-					for (var j = 0; j < domStyle.parts.length; j++) {
-						domStyle.parts[j]();
-					}delete stylesInDom[domStyle.id];
-				}
-			}
-		};
-	};
-
-	function addStylesToDom(styles, options) {
-		for (var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-			if (domStyle) {
-				domStyle.refs++;
-				for (var j = 0; j < domStyle.parts.length; j++) {
-					domStyle.parts[j](item.parts[j]);
-				}
-				for (; j < item.parts.length; j++) {
-					domStyle.parts.push(addStyle(item.parts[j], options));
-				}
-			} else {
-				var parts = [];
-				for (var j = 0; j < item.parts.length; j++) {
-					parts.push(addStyle(item.parts[j], options));
-				}
-				stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts };
-			}
-		}
-	}
-
-	function listToStyles(list) {
-		var styles = [];
-		var newStyles = {};
-		for (var i = 0; i < list.length; i++) {
-			var item = list[i];
-			var id = item[0];
-			var css = item[1];
-			var media = item[2];
-			var sourceMap = item[3];
-			var part = { css: css, media: media, sourceMap: sourceMap };
-			if (!newStyles[id]) styles.push(newStyles[id] = { id: id, parts: [part] });else newStyles[id].parts.push(part);
-		}
-		return styles;
-	}
-
-	function insertStyleElement(options, styleElement) {
-		var head = getHeadElement();
-		var lastStyleElementInsertedAtTop = styleElementsInsertedAtTop[styleElementsInsertedAtTop.length - 1];
-		if (options.insertAt === "top") {
-			if (!lastStyleElementInsertedAtTop) {
-				head.insertBefore(styleElement, head.firstChild);
-			} else if (lastStyleElementInsertedAtTop.nextSibling) {
-				head.insertBefore(styleElement, lastStyleElementInsertedAtTop.nextSibling);
-			} else {
-				head.appendChild(styleElement);
-			}
-			styleElementsInsertedAtTop.push(styleElement);
-		} else if (options.insertAt === "bottom") {
-			head.appendChild(styleElement);
-		} else {
-			throw new Error("Invalid value for parameter 'insertAt'. Must be 'top' or 'bottom'.");
-		}
-	}
-
-	function removeStyleElement(styleElement) {
-		styleElement.parentNode.removeChild(styleElement);
-		var idx = styleElementsInsertedAtTop.indexOf(styleElement);
-		if (idx >= 0) {
-			styleElementsInsertedAtTop.splice(idx, 1);
-		}
-	}
-
-	function createStyleElement(options) {
-		var styleElement = document.createElement("style");
-		styleElement.type = "text/css";
-		insertStyleElement(options, styleElement);
-		return styleElement;
-	}
-
-	function createLinkElement(options) {
-		var linkElement = document.createElement("link");
-		linkElement.rel = "stylesheet";
-		insertStyleElement(options, linkElement);
-		return linkElement;
-	}
-
-	function addStyle(obj, options) {
-		var styleElement, update, remove;
-
-		if (options.singleton) {
-			var styleIndex = singletonCounter++;
-			styleElement = singletonElement || (singletonElement = createStyleElement(options));
-			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
-			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
-		} else if (obj.sourceMap && typeof URL === "function" && typeof URL.createObjectURL === "function" && typeof URL.revokeObjectURL === "function" && typeof Blob === "function" && typeof btoa === "function") {
-			styleElement = createLinkElement(options);
-			update = updateLink.bind(null, styleElement);
-			remove = function remove() {
-				removeStyleElement(styleElement);
-				if (styleElement.href) URL.revokeObjectURL(styleElement.href);
-			};
-		} else {
-			styleElement = createStyleElement(options);
-			update = applyToTag.bind(null, styleElement);
-			remove = function remove() {
-				removeStyleElement(styleElement);
-			};
-		}
-
-		update(obj);
-
-		return function updateStyle(newObj) {
-			if (newObj) {
-				if (newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap) return;
-				update(obj = newObj);
-			} else {
-				remove();
-			}
-		};
-	}
-
-	var replaceText = function () {
-		var textStore = [];
-
-		return function (index, replacement) {
-			textStore[index] = replacement;
-			return textStore.filter(Boolean).join('\n');
-		};
-	}();
-
-	function applyToSingletonTag(styleElement, index, remove, obj) {
-		var css = remove ? "" : obj.css;
-
-		if (styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = replaceText(index, css);
-		} else {
-			var cssNode = document.createTextNode(css);
-			var childNodes = styleElement.childNodes;
-			if (childNodes[index]) styleElement.removeChild(childNodes[index]);
-			if (childNodes.length) {
-				styleElement.insertBefore(cssNode, childNodes[index]);
-			} else {
-				styleElement.appendChild(cssNode);
-			}
-		}
-	}
-
-	function applyToTag(styleElement, obj) {
-		var css = obj.css;
-		var media = obj.media;
-
-		if (media) {
-			styleElement.setAttribute("media", media);
-		}
-
-		if (styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = css;
-		} else {
-			while (styleElement.firstChild) {
-				styleElement.removeChild(styleElement.firstChild);
-			}
-			styleElement.appendChild(document.createTextNode(css));
-		}
-	}
-
-	function updateLink(linkElement, obj) {
-		var css = obj.css;
-		var sourceMap = obj.sourceMap;
-
-		if (sourceMap) {
-			// http://stackoverflow.com/a/26603875
-			css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
-		}
-
-		var blob = new Blob([css], { type: "text/css" });
-
-		var oldSrc = linkElement.href;
-
-		linkElement.href = URL.createObjectURL(blob);
-
-		if (oldSrc) URL.revokeObjectURL(oldSrc);
-	}
-
-	/***/
-}
-/******/]));
+(function e(t, n, r) {
+    function s(o, u) {
+        if (!n[o]) {
+            if (!t[o]) {
+                var a = typeof require == "function" && require;if (!u && a) return a(o, !0);if (i) return i(o, !0);var f = new Error("Cannot find module '" + o + "'");throw f.code = "MODULE_NOT_FOUND", f;
+            }var l = n[o] = { exports: {} };t[o][0].call(l.exports, function (e) {
+                var n = t[o][1][e];return s(n ? n : e);
+            }, l, l.exports, e, t, n, r);
+        }return n[o].exports;
+    }var i = typeof require == "function" && require;for (var o = 0; o < r.length; o++) {
+        s(r[o]);
+    }return s;
+})({ 1: [function (require, module, exports) {
+        /*!
+         * EventEmitter v4.2.11 - git.io/ee
+         * Unlicense - http://unlicense.org/
+         * Oliver Caldwell - http://oli.me.uk/
+         * @preserve
+         */
+
+        ;(function () {
+            'use strict';
+
+            /**
+             * Class for managing events.
+             * Can be extended to provide event functionality in other classes.
+             *
+             * @class EventEmitter Manages event registering and emitting.
+             */
+
+            function EventEmitter() {}
+
+            // Shortcuts to improve speed and size
+            var proto = EventEmitter.prototype;
+            var exports = this;
+            var originalGlobalValue = exports.EventEmitter;
+
+            /**
+             * Finds the index of the listener for the event in its storage array.
+             *
+             * @param {Function[]} listeners Array of listeners to search through.
+             * @param {Function} listener Method to look for.
+             * @return {Number} Index of the specified listener, -1 if not found
+             * @api private
+             */
+            function indexOfListener(listeners, listener) {
+                var i = listeners.length;
+                while (i--) {
+                    if (listeners[i].listener === listener) {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
+            /**
+             * Alias a method while keeping the context correct, to allow for overwriting of target method.
+             *
+             * @param {String} name The name of the target method.
+             * @return {Function} The aliased method
+             * @api private
+             */
+            function alias(name) {
+                return function aliasClosure() {
+                    return this[name].apply(this, arguments);
+                };
+            }
+
+            /**
+             * Returns the listener array for the specified event.
+             * Will initialise the event object and listener arrays if required.
+             * Will return an object if you use a regex search. The object contains keys for each matched event. So /ba[rz]/ might return an object containing bar and baz. But only if you have either defined them with defineEvent or added some listeners to them.
+             * Each property in the object response is an array of listener functions.
+             *
+             * @param {String|RegExp} evt Name of the event to return the listeners from.
+             * @return {Function[]|Object} All listener functions for the event.
+             */
+            proto.getListeners = function getListeners(evt) {
+                var events = this._getEvents();
+                var response;
+                var key;
+
+                // Return a concatenated array of all matching events if
+                // the selector is a regular expression.
+                if (evt instanceof RegExp) {
+                    response = {};
+                    for (key in events) {
+                        if (events.hasOwnProperty(key) && evt.test(key)) {
+                            response[key] = events[key];
+                        }
+                    }
+                } else {
+                    response = events[evt] || (events[evt] = []);
+                }
+
+                return response;
+            };
+
+            /**
+             * Takes a list of listener objects and flattens it into a list of listener functions.
+             *
+             * @param {Object[]} listeners Raw listener objects.
+             * @return {Function[]} Just the listener functions.
+             */
+            proto.flattenListeners = function flattenListeners(listeners) {
+                var flatListeners = [];
+                var i;
+
+                for (i = 0; i < listeners.length; i += 1) {
+                    flatListeners.push(listeners[i].listener);
+                }
+
+                return flatListeners;
+            };
+
+            /**
+             * Fetches the requested listeners via getListeners but will always return the results inside an object. This is mainly for internal use but others may find it useful.
+             *
+             * @param {String|RegExp} evt Name of the event to return the listeners from.
+             * @return {Object} All listener functions for an event in an object.
+             */
+            proto.getListenersAsObject = function getListenersAsObject(evt) {
+                var listeners = this.getListeners(evt);
+                var response;
+
+                if (listeners instanceof Array) {
+                    response = {};
+                    response[evt] = listeners;
+                }
+
+                return response || listeners;
+            };
+
+            /**
+             * Adds a listener function to the specified event.
+             * The listener will not be added if it is a duplicate.
+             * If the listener returns true then it will be removed after it is called.
+             * If you pass a regular expression as the event name then the listener will be added to all events that match it.
+             *
+             * @param {String|RegExp} evt Name of the event to attach the listener to.
+             * @param {Function} listener Method to be called when the event is emitted. If the function returns true then it will be removed after calling.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.addListener = function addListener(evt, listener) {
+                var listeners = this.getListenersAsObject(evt);
+                var listenerIsWrapped = (typeof listener === "undefined" ? "undefined" : _typeof(listener)) === 'object';
+                var key;
+
+                for (key in listeners) {
+                    if (listeners.hasOwnProperty(key) && indexOfListener(listeners[key], listener) === -1) {
+                        listeners[key].push(listenerIsWrapped ? listener : {
+                            listener: listener,
+                            once: false
+                        });
+                    }
+                }
+
+                return this;
+            };
+
+            /**
+             * Alias of addListener
+             */
+            proto.on = alias('addListener');
+
+            /**
+             * Semi-alias of addListener. It will add a listener that will be
+             * automatically removed after its first execution.
+             *
+             * @param {String|RegExp} evt Name of the event to attach the listener to.
+             * @param {Function} listener Method to be called when the event is emitted. If the function returns true then it will be removed after calling.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.addOnceListener = function addOnceListener(evt, listener) {
+                return this.addListener(evt, {
+                    listener: listener,
+                    once: true
+                });
+            };
+
+            /**
+             * Alias of addOnceListener.
+             */
+            proto.once = alias('addOnceListener');
+
+            /**
+             * Defines an event name. This is required if you want to use a regex to add a listener to multiple events at once. If you don't do this then how do you expect it to know what event to add to? Should it just add to every possible match for a regex? No. That is scary and bad.
+             * You need to tell it what event names should be matched by a regex.
+             *
+             * @param {String} evt Name of the event to create.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.defineEvent = function defineEvent(evt) {
+                this.getListeners(evt);
+                return this;
+            };
+
+            /**
+             * Uses defineEvent to define multiple events.
+             *
+             * @param {String[]} evts An array of event names to define.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.defineEvents = function defineEvents(evts) {
+                for (var i = 0; i < evts.length; i += 1) {
+                    this.defineEvent(evts[i]);
+                }
+                return this;
+            };
+
+            /**
+             * Removes a listener function from the specified event.
+             * When passed a regular expression as the event name, it will remove the listener from all events that match it.
+             *
+             * @param {String|RegExp} evt Name of the event to remove the listener from.
+             * @param {Function} listener Method to remove from the event.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.removeListener = function removeListener(evt, listener) {
+                var listeners = this.getListenersAsObject(evt);
+                var index;
+                var key;
+
+                for (key in listeners) {
+                    if (listeners.hasOwnProperty(key)) {
+                        index = indexOfListener(listeners[key], listener);
+
+                        if (index !== -1) {
+                            listeners[key].splice(index, 1);
+                        }
+                    }
+                }
+
+                return this;
+            };
+
+            /**
+             * Alias of removeListener
+             */
+            proto.off = alias('removeListener');
+
+            /**
+             * Adds listeners in bulk using the manipulateListeners method.
+             * If you pass an object as the second argument you can add to multiple events at once. The object should contain key value pairs of events and listeners or listener arrays. You can also pass it an event name and an array of listeners to be added.
+             * You can also pass it a regular expression to add the array of listeners to all events that match it.
+             * Yeah, this function does quite a bit. That's probably a bad thing.
+             *
+             * @param {String|Object|RegExp} evt An event name if you will pass an array of listeners next. An object if you wish to add to multiple events at once.
+             * @param {Function[]} [listeners] An optional array of listener functions to add.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.addListeners = function addListeners(evt, listeners) {
+                // Pass through to manipulateListeners
+                return this.manipulateListeners(false, evt, listeners);
+            };
+
+            /**
+             * Removes listeners in bulk using the manipulateListeners method.
+             * If you pass an object as the second argument you can remove from multiple events at once. The object should contain key value pairs of events and listeners or listener arrays.
+             * You can also pass it an event name and an array of listeners to be removed.
+             * You can also pass it a regular expression to remove the listeners from all events that match it.
+             *
+             * @param {String|Object|RegExp} evt An event name if you will pass an array of listeners next. An object if you wish to remove from multiple events at once.
+             * @param {Function[]} [listeners] An optional array of listener functions to remove.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.removeListeners = function removeListeners(evt, listeners) {
+                // Pass through to manipulateListeners
+                return this.manipulateListeners(true, evt, listeners);
+            };
+
+            /**
+             * Edits listeners in bulk. The addListeners and removeListeners methods both use this to do their job. You should really use those instead, this is a little lower level.
+             * The first argument will determine if the listeners are removed (true) or added (false).
+             * If you pass an object as the second argument you can add/remove from multiple events at once. The object should contain key value pairs of events and listeners or listener arrays.
+             * You can also pass it an event name and an array of listeners to be added/removed.
+             * You can also pass it a regular expression to manipulate the listeners of all events that match it.
+             *
+             * @param {Boolean} remove True if you want to remove listeners, false if you want to add.
+             * @param {String|Object|RegExp} evt An event name if you will pass an array of listeners next. An object if you wish to add/remove from multiple events at once.
+             * @param {Function[]} [listeners] An optional array of listener functions to add/remove.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.manipulateListeners = function manipulateListeners(remove, evt, listeners) {
+                var i;
+                var value;
+                var single = remove ? this.removeListener : this.addListener;
+                var multiple = remove ? this.removeListeners : this.addListeners;
+
+                // If evt is an object then pass each of its properties to this method
+                if ((typeof evt === "undefined" ? "undefined" : _typeof(evt)) === 'object' && !(evt instanceof RegExp)) {
+                    for (i in evt) {
+                        if (evt.hasOwnProperty(i) && (value = evt[i])) {
+                            // Pass the single listener straight through to the singular method
+                            if (typeof value === 'function') {
+                                single.call(this, i, value);
+                            } else {
+                                // Otherwise pass back to the multiple function
+                                multiple.call(this, i, value);
+                            }
+                        }
+                    }
+                } else {
+                    // So evt must be a string
+                    // And listeners must be an array of listeners
+                    // Loop over it and pass each one to the multiple method
+                    i = listeners.length;
+                    while (i--) {
+                        single.call(this, evt, listeners[i]);
+                    }
+                }
+
+                return this;
+            };
+
+            /**
+             * Removes all listeners from a specified event.
+             * If you do not specify an event then all listeners will be removed.
+             * That means every event will be emptied.
+             * You can also pass a regex to remove all events that match it.
+             *
+             * @param {String|RegExp} [evt] Optional name of the event to remove all listeners for. Will remove from every event if not passed.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.removeEvent = function removeEvent(evt) {
+                var type = typeof evt === "undefined" ? "undefined" : _typeof(evt);
+                var events = this._getEvents();
+                var key;
+
+                // Remove different things depending on the state of evt
+                if (type === 'string') {
+                    // Remove all listeners for the specified event
+                    delete events[evt];
+                } else if (evt instanceof RegExp) {
+                    // Remove all events matching the regex.
+                    for (key in events) {
+                        if (events.hasOwnProperty(key) && evt.test(key)) {
+                            delete events[key];
+                        }
+                    }
+                } else {
+                    // Remove all listeners in all events
+                    delete this._events;
+                }
+
+                return this;
+            };
+
+            /**
+             * Alias of removeEvent.
+             *
+             * Added to mirror the node API.
+             */
+            proto.removeAllListeners = alias('removeEvent');
+
+            /**
+             * Emits an event of your choice.
+             * When emitted, every listener attached to that event will be executed.
+             * If you pass the optional argument array then those arguments will be passed to every listener upon execution.
+             * Because it uses `apply`, your array of arguments will be passed as if you wrote them out separately.
+             * So they will not arrive within the array on the other side, they will be separate.
+             * You can also pass a regular expression to emit to all events that match it.
+             *
+             * @param {String|RegExp} evt Name of the event to emit and execute listeners for.
+             * @param {Array} [args] Optional array of arguments to be passed to each listener.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.emitEvent = function emitEvent(evt, args) {
+                var listenersMap = this.getListenersAsObject(evt);
+                var listeners;
+                var listener;
+                var i;
+                var key;
+                var response;
+
+                for (key in listenersMap) {
+                    if (listenersMap.hasOwnProperty(key)) {
+                        listeners = listenersMap[key].slice(0);
+                        i = listeners.length;
+
+                        while (i--) {
+                            // If the listener returns true then it shall be removed from the event
+                            // The function is executed either with a basic call or an apply if there is an args array
+                            listener = listeners[i];
+
+                            if (listener.once === true) {
+                                this.removeListener(evt, listener.listener);
+                            }
+
+                            response = listener.listener.apply(this, args || []);
+
+                            if (response === this._getOnceReturnValue()) {
+                                this.removeListener(evt, listener.listener);
+                            }
+                        }
+                    }
+                }
+
+                return this;
+            };
+
+            /**
+             * Alias of emitEvent
+             */
+            proto.trigger = alias('emitEvent');
+
+            /**
+             * Subtly different from emitEvent in that it will pass its arguments on to the listeners, as opposed to taking a single array of arguments to pass on.
+             * As with emitEvent, you can pass a regex in place of the event name to emit to all events that match it.
+             *
+             * @param {String|RegExp} evt Name of the event to emit and execute listeners for.
+             * @param {...*} Optional additional arguments to be passed to each listener.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.emit = function emit(evt) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                return this.emitEvent(evt, args);
+            };
+
+            /**
+             * Sets the current value to check against when executing listeners. If a
+             * listeners return value matches the one set here then it will be removed
+             * after execution. This value defaults to true.
+             *
+             * @param {*} value The new value to check for when executing listeners.
+             * @return {Object} Current instance of EventEmitter for chaining.
+             */
+            proto.setOnceReturnValue = function setOnceReturnValue(value) {
+                this._onceReturnValue = value;
+                return this;
+            };
+
+            /**
+             * Fetches the current value to check against when executing listeners. If
+             * the listeners return value matches this one then it should be removed
+             * automatically. It will return true by default.
+             *
+             * @return {*|Boolean} The current value to check for or the default, true.
+             * @api private
+             */
+            proto._getOnceReturnValue = function _getOnceReturnValue() {
+                if (this.hasOwnProperty('_onceReturnValue')) {
+                    return this._onceReturnValue;
+                } else {
+                    return true;
+                }
+            };
+
+            /**
+             * Fetches the events object and creates one if required.
+             *
+             * @return {Object} The events storage object.
+             * @api private
+             */
+            proto._getEvents = function _getEvents() {
+                return this._events || (this._events = {});
+            };
+
+            /**
+             * Reverts the global {@link EventEmitter} to its previous value and returns a reference to this version.
+             *
+             * @return {Function} Non conflicting EventEmitter class.
+             */
+            EventEmitter.noConflict = function noConflict() {
+                exports.EventEmitter = originalGlobalValue;
+                return EventEmitter;
+            };
+
+            // Expose the class either via AMD, CommonJS or the global object
+            if (typeof define === 'function' && define.amd) {
+                define(function () {
+                    return EventEmitter;
+                });
+            } else if ((typeof module === "undefined" ? "undefined" : _typeof(module)) === 'object' && module.exports) {
+                module.exports = EventEmitter;
+            } else {
+                exports.EventEmitter = EventEmitter;
+            }
+        }).call(this);
+    }, {}], 2: [function (require, module, exports) {
+        var duration = 320;
+
+        function css(element, styles) {
+            for (var property in styles) {
+                element.style[property] = styles[property];
+            }
+        }
+
+        function initObjectProperties(properties, value) {
+            var newObject = {};
+            for (var i = 0; i < properties.length; i++) {
+                newObject[properties[i]] = value;
+            }
+            return newObject;
+        }
+
+        function copyObjectProperties(properties, object) {
+            var newObject = {};
+            for (var i = 0; i < properties.length; i++) {
+                newObject[properties[i]] = object[properties[i]];
+            }
+            return newObject;
+        }
+
+        /**
+         * Checks if the given element is currently being animated.
+         *
+         * @param element
+         * @returns {boolean}
+         */
+        function animated(element) {
+            return !!element.getAttribute('data-animated');
+        }
+
+        /**
+         * Toggles the element using the given animation.
+         *
+         * @param element
+         * @param animation Either "fade" or "slide"
+         */
+        function toggle(element, animation) {
+            var nowVisible = element.style.display != 'none' || element.offsetLeft > 0;
+
+            // create clone for reference
+            var clone = element.cloneNode(true);
+
+            // store attribute so everyone knows we're animating this element
+            element.setAttribute('data-animated', "true");
+
+            // toggle element visiblity right away if we're making something visible
+            if (!nowVisible) {
+                element.style.display = '';
+            }
+
+            var hiddenStyles, visibleStyles;
+
+            // animate properties
+            if (animation === 'slide') {
+                hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
+                visibleStyles = {};
+
+                if (!nowVisible) {
+                    var computedStyles = window.getComputedStyle(element);
+                    visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles);
+                    css(element, hiddenStyles);
+                }
+
+                // don't show a scrollbar during animation
+                element.style.overflowY = 'hidden';
+                animate(element, nowVisible ? hiddenStyles : visibleStyles);
+            } else {
+                hiddenStyles = { opacity: 0 };
+                visibleStyles = { opacity: 1 };
+                if (!nowVisible) {
+                    css(element, hiddenStyles);
+                }
+
+                animate(element, nowVisible ? hiddenStyles : visibleStyles);
+            }
+
+            // clean-up after animation
+            window.setTimeout(function () {
+                element.removeAttribute('data-animated');
+                element.setAttribute('style', clone.getAttribute('style'));
+                element.style.display = nowVisible ? 'none' : '';
+            }, duration * 1.2);
+        }
+
+        function animate(element, targetStyles) {
+            var last = +new Date();
+            var initialStyles = window.getComputedStyle(element);
+            var currentStyles = {};
+            var propSteps = {};
+
+            for (var property in targetStyles) {
+                // make sure we have an object filled with floats
+                targetStyles[property] = parseFloat(targetStyles[property]);
+
+                // calculate step size & current value
+                var to = targetStyles[property];
+                var current = parseFloat(initialStyles[property]);
+                propSteps[property] = (to - current) / duration; // points per second
+                currentStyles[property] = current;
+            }
+
+            var tick = function tick() {
+                var now = +new Date();
+                var timeSinceLastTick = now - last;
+                var done = true;
+
+                var step, to, increment, newValue;
+                for (var property in targetStyles) {
+                    step = propSteps[property];
+                    to = targetStyles[property];
+                    increment = step * timeSinceLastTick;
+                    newValue = currentStyles[property] + increment;
+
+                    if (step > 0 && newValue >= to || step < 0 && newValue <= to) {
+                        newValue = to;
+                    } else {
+                        done = false;
+                    }
+
+                    // store new value
+                    currentStyles[property] = newValue;
+
+                    var suffix = property !== "opacity" ? "px" : "";
+                    element.style[property] = newValue + suffix;
+                }
+
+                last = +new Date();
+
+                // keep going until we're done for all props
+                if (!done) {
+                    window.requestAnimationFrame && requestAnimationFrame(tick) || setTimeout(tick, 32);
+                }
+            };
+
+            tick();
+        }
+
+        module.exports = {
+            'toggle': toggle,
+            'animated': animated
+        };
+    }, {}], 3: [function (require, module, exports) {
+        'use strict';
+
+        var defaults = {
+            'animation': 'fade',
+            'rehide': false,
+            'content': '',
+            'cookieTime': 0,
+            'icon': '&times',
+            'minimumScreenWidth': 0,
+            'position': 'center',
+            'testMode': false,
+            'trigger': false,
+            'closable': true
+        },
+            Boxzilla,
+            Animator = require('./animator.js');
+
+        /**
+         * Merge 2 objects, values of the latter overwriting the former.
+         *
+         * @param obj1
+         * @param obj2
+         * @returns {*}
+         */
+        function merge(obj1, obj2) {
+            var obj3 = {};
+            for (var attrname in obj1) {
+                obj3[attrname] = obj1[attrname];
+            }
+            for (var attrname in obj2) {
+                obj3[attrname] = obj2[attrname];
+            }
+            return obj3;
+        }
+
+        // Box Object
+        var Box = function Box(id, config) {
+            this.id = id;
+
+            // store config values
+            this.config = merge(defaults, config);
+
+            // store ref to overlay
+            this.overlay = document.getElementById('boxzilla-overlay');
+
+            // state
+            this.visible = false;
+            this.closed = false;
+            this.triggered = false;
+            this.triggerHeight = 0;
+            this.cookieSet = false;
+            this.element = null;
+            this.closeIcon = null;
+
+            // if a trigger was given, calculate values once and store
+            if (this.config.trigger) {
+                if (this.config.trigger.method === 'percentage' || this.config.trigger.method === 'element') {
+                    this.triggerHeight = this.calculateTriggerHeight();
+                }
+
+                this.cookieSet = this.isCookieSet();
+            }
+
+            // create dom elements for this box
+            this.dom();
+
+            // further initialise the box
+            this.events();
+        };
+
+        // initialise the box
+        Box.prototype.events = function () {
+            var box = this;
+
+            // attach event to "close" icon inside box
+            this.closeIcon && this.closeIcon.addEventListener('click', box.dismiss.bind(this));
+
+            this.element.addEventListener('click', function (e) {
+                if (e.target.tagName === 'A') {
+                    Boxzilla.trigger('box.interactions.link', [box, e.target]);
+                }
+            }, false);
+
+            this.element.addEventListener('submit', function (e) {
+                box.setCookie();
+                Boxzilla.trigger('box.interactions.form', [box, e.target]);
+            }, false);
+
+            // listen to all "click" events
+            document.body.addEventListener('click', function (e) {
+
+                // only act on links
+                if (e.target.tagName !== 'A') {
+                    return;
+                }
+
+                // check if link href ends with "#boxzilla-{box.id}
+                var needle = "#boxzilla-" + box.id;
+                var haystack = e.target.getAttribute("href");
+                if (haystack && haystack.substring(-needle.length) === needle) {
+                    box.toggle();
+                    e.preventDefault();
+                }
+            }, false);
+
+            // maybe show box right away
+            if (this.fits() && this.locationHashRefersBox()) {
+                window.addEventListener('load', this.show.bind(this));
+            }
+        };
+
+        // generate dom elements for this box
+        Box.prototype.dom = function () {
+            var wrapper = document.createElement('div');
+            wrapper.className = 'boxzilla-container boxzilla-' + this.config.position + '-container';
+
+            var box = document.createElement('div');
+            box.setAttribute('id', 'boxzilla-' + this.id);
+            box.className = 'boxzilla boxzilla-' + this.id + ' boxzilla-' + this.config.position;
+            box.style.display = 'none';
+            wrapper.appendChild(box);
+
+            var content = document.createElement('div');
+            content.className = 'boxzilla-content';
+            content.innerHTML = this.config.content;
+            box.appendChild(content);
+
+            // remove <script> from box content and append them to the document body
+            var scripts = content.querySelectorAll('script');
+            if (scripts.length) {
+                var script = document.createElement('script');
+                for (var i = 0; i < scripts.length; i++) {
+                    script.appendChild(document.createTextNode(scripts[i].text));
+                    scripts[i].parentNode.removeChild(scripts[i]);
+                }
+                document.body.appendChild(script);
+            }
+
+            if (this.config.closable && this.config.icon) {
+                var closeIcon = document.createElement('span');
+                closeIcon.className = "boxzilla-close-icon";
+                closeIcon.innerHTML = this.config.icon;
+                box.appendChild(closeIcon);
+                this.closeIcon = closeIcon;
+            }
+
+            document.body.appendChild(wrapper);
+            this.element = box;
+        };
+
+        // set (calculate) custom box styling depending on box options
+        Box.prototype.setCustomBoxStyling = function () {
+
+            // reset element to its initial state
+            var origDisplay = this.element.style.display;
+            this.element.style.display = '';
+            this.element.style.overflowY = 'auto';
+            this.element.style.maxHeight = 'none';
+
+            // get new dimensions
+            var windowHeight = window.innerHeight;
+            var boxHeight = this.element.clientHeight;
+
+            // add scrollbar to box and limit height
+            if (boxHeight > windowHeight) {
+                this.element.style.maxHeight = windowHeight + "px";
+                this.element.style.overflowY = 'scroll';
+            }
+
+            // set new top margin for boxes which are centered
+            if (this.config.position === 'center') {
+                var newTopMargin = (windowHeight - boxHeight) / 2;
+                newTopMargin = newTopMargin >= 0 ? newTopMargin : 0;
+                this.element.style.marginTop = newTopMargin + "px";
+            }
+
+            this.element.style.display = origDisplay;
+        };
+
+        // toggle visibility of the box
+        Box.prototype.toggle = function (show) {
+
+            // revert visibility if no explicit argument is given
+            if (typeof show === "undefined") {
+                show = !this.visible;
+            }
+
+            // is box already at desired visibility?
+            if (show === this.visible) {
+                return false;
+            }
+
+            // is box being animated?
+            if (Animator.animated(this.element)) {
+                return false;
+            }
+
+            // if box should be hidden but is not closable, bail.
+            if (!show && !this.config.closable) {
+                return false;
+            }
+
+            // set new visibility status
+            this.visible = show;
+
+            // calculate new styling rules
+            this.setCustomBoxStyling();
+
+            // trigger event
+            Boxzilla.trigger('box.' + (show ? 'show' : 'hide'), [this]);
+
+            // show or hide box using selected animation
+            if (this.config.position === 'center') {
+                Animator.toggle(this.overlay, "fade");
+            }
+
+            Animator.toggle(this.element, this.config.animation);
+
+            // focus on first input field in box
+            var firstInput = this.element.querySelector('input, textarea');
+            if (firstInput) {
+                firstInput.focus();
+            }
+
+            return true;
+        };
+
+        // show the box
+        Box.prototype.show = function () {
+            return this.toggle(true);
+        };
+
+        // hide the box
+        Box.prototype.hide = function () {
+            return this.toggle(false);
+        };
+
+        // calculate trigger height
+        Box.prototype.calculateTriggerHeight = function () {
+            var triggerHeight = 0;
+
+            if (this.config.trigger.method === 'element') {
+                var triggerElement = document.body.querySelector(this.config.trigger.value);
+                if (triggerElement) {
+                    var offset = triggerElement.getBoundingClientRect();
+                    triggerHeight = offset.top;
+                }
+            } else if (this.config.trigger.method === 'percentage') {
+                triggerHeight = this.config.trigger.value / 100 * document.body.clientHeight;
+            }
+
+            return triggerHeight;
+        };
+
+        // set cookie that disables automatically showing the box
+        Box.prototype.setCookie = function () {
+            // do nothing if cookieTime evaluates to false
+            if (!this.config.cookieTime) {
+                return;
+            }
+
+            var expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + this.config.cookieTime);
+            document.cookie = 'boxzilla_box_' + this.id + '=true; expires=' + expiryDate.toUTCString() + '; path=/';
+        };
+
+        // checks whether window.location.hash equals the box element ID or that of any element inside the box
+        Box.prototype.locationHashRefersBox = function () {
+
+            if (!window.location.hash || 0 === window.location.hash.length) {
+                return false;
+            }
+
+            var elementId = window.location.hash.substring(1);
+            if (elementId === this.element.id) {
+                return true;
+            } else if (this.element.querySelector('#' + elementId)) {
+                return true;
+            }
+
+            return false;
+        };
+
+        Box.prototype.fits = function () {
+            if (this.config.minimumScreenWidth <= 0) {
+                return true;
+            }
+
+            return window.innerWidth > this.config.minimumScreenWidth;
+        };
+
+        // is this box enabled?
+        Box.prototype.mayAutoShow = function () {
+
+            // don't show if box was closed (dismissed) before
+            if (this.closed) {
+                return false;
+            }
+
+            // check if box fits on given minimum screen width
+            if (!this.fits()) {
+                return false;
+            }
+
+            // if trigger empty or error in calculating triggerHeight, return false
+            if (!this.config.trigger) {
+                return false;
+            }
+
+            // rely on cookie value (show if not set, don't show if set)
+            return !this.cookieSet;
+        };
+
+        Box.prototype.mayRehide = function () {
+            return this.config.rehide && this.triggered;
+        };
+
+        Box.prototype.isCookieSet = function () {
+            // always show on test mode
+            if (this.config.testMode) {
+                return false;
+            }
+
+            // check for cookie
+            if (!this.config.cookieTime) {
+                return false;
+            }
+
+            var cookieSet = document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'boxzilla_box_' + this.id + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1") === "true";
+            return cookieSet;
+        };
+
+        Box.prototype.trigger = function () {
+            var shown = this.show();
+            if (shown) {
+                this.triggered = true;
+            }
+        };
+
+        Box.prototype.dismiss = function () {
+            this.hide();
+            this.setCookie();
+            this.closed = true;
+            Boxzilla.trigger('box.dismiss', [this]);
+        };
+
+        module.exports = function (_Boxzilla) {
+            Boxzilla = _Boxzilla;
+            return Box;
+        };
+    }, { "./animator.js": 2 }], 4: [function (require, module, exports) {
+        'use strict';
+
+        var EventEmitter = require('wolfy87-eventemitter'),
+            Boxzilla = Object.create(EventEmitter.prototype),
+            Box = require('./box.js')(Boxzilla),
+            Timer = require('./timer.js'),
+            css = require('./css.js'),
+            boxes = {},
+            windowHeight,
+            overlay,
+            exitIntentDelayTimer,
+            exitIntentTriggered,
+            siteTimer,
+            pageTimer,
+            pageViews;
+
+        function each(obj, callback) {
+            for (var key in obj) {
+                if (!obj.hasOwnProperty(key)) continue;
+                callback(obj[key]);
+            }
+        }
+
+        function throttle(fn, threshhold, scope) {
+            threshhold || (threshhold = 250);
+            var last, deferTimer;
+            return function () {
+                var context = scope || this;
+
+                var now = +new Date(),
+                    args = arguments;
+                if (last && now < last + threshhold) {
+                    // hold on to it
+                    clearTimeout(deferTimer);
+                    deferTimer = setTimeout(function () {
+                        last = now;
+                        fn.apply(context, args);
+                    }, threshhold);
+                } else {
+                    last = now;
+                    fn.apply(context, args);
+                }
+            };
+        }
+
+        // "keyup" listener
+        function onKeyUp(e) {
+            if (e.keyCode == 27) {
+                Boxzilla.dismiss();
+            }
+        }
+
+        // check "pageviews" criteria for each box
+        function checkPageViewsCriteria() {
+            each(boxes, function (box) {
+                if (!box.mayAutoShow()) {
+                    return;
+                }
+
+                if (box.config.trigger.method === 'pageviews' && pageViews >= box.config.trigger.value) {
+                    box.trigger();
+                }
+            });
+        }
+
+        // check time trigger criteria for each box
+        function checkTimeCriteria() {
+            each(boxes, function (box) {
+                if (!box.mayAutoShow()) {
+                    return;
+                }
+
+                // check "time on site" trigger
+                if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value) {
+                    box.trigger();
+                }
+
+                // check "time on page" trigger
+                if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value) {
+                    box.trigger();
+                }
+            });
+        }
+
+        // check triggerHeight criteria for all boxes
+        function checkHeightCriteria() {
+            var scrollY = window.scrollY;
+            var scrollHeight = scrollY + windowHeight * 0.667;
+
+            each(boxes, function (box) {
+                if (!box.mayAutoShow() || box.triggerHeight <= 0) {
+                    return;
+                }
+
+                if (scrollHeight > box.triggerHeight) {
+                    box.trigger();
+                } else if (box.mayRehide()) {
+                    box.hide();
+                }
+            });
+        }
+
+        // recalculate heights and variables based on height
+        function recalculateHeights() {
+            windowHeight = window.innerHeight;
+
+            each(boxes, function (box) {
+                box.setCustomBoxStyling();
+            });
+        }
+
+        function onOverlayClick(e) {
+            var x = e.offsetX;
+            var y = e.offsetY;
+
+            // calculate if click was near a box to avoid closing it (click error margin)
+            each(boxes, function (box) {
+                var rect = box.element.getBoundingClientRect();
+                var margin = 100 + window.innerWidth * 0.05;
+
+                // if click was not anywhere near box, dismiss it.
+                if (x < rect.left - margin || x > rect.right + margin || y < rect.top - margin || y > rect.bottom + margin) {
+                    box.dismiss();
+                }
+            });
+        }
+
+        function triggerExitIntent() {
+            if (exitIntentTriggered) return;
+
+            each(boxes, function (box) {
+                if (box.mayAutoShow() && box.config.trigger.method === 'exit_intent') {
+                    box.trigger();
+                }
+            });
+
+            exitIntentTriggered = true;
+        }
+
+        function onMouseLeave(e) {
+            var delay = 400;
+
+            // did mouse leave at top of window?
+            if (e.clientY <= 0) {
+                exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
+            }
+        }
+
+        function onMouseEnter() {
+            if (exitIntentDelayTimer) {
+                window.clearInterval(exitIntentDelayTimer);
+                exitIntentDelayTimer = null;
+            }
+        }
+
+        var timers = {
+            start: function start() {
+                var sessionTime = sessionStorage.getItem('boxzilla_timer');
+                if (sessionTime) siteTimer.time = sessionTime;
+                siteTimer.start();
+                pageTimer.start();
+            },
+            stop: function stop() {
+                sessionStorage.setItem('boxzilla_timer', siteTimer.time);
+                siteTimer.stop();
+                pageTimer.stop();
+            }
+        };
+
+        // initialise & add event listeners
+        Boxzilla.init = function () {
+            siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
+            pageTimer = new Timer(0);
+            pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
+            windowHeight = window.innerHeight;
+
+            // insert styles into DOM
+            var styles = require('./styles.js');
+            console.log(styles);
+            var styleElement = document.createElement('style');
+            styleElement.setAttribute("type", "text/css");
+            styleElement.innerHTML = styles;
+            document.head.appendChild(styleElement);
+
+            // add overlay element to dom
+            overlay = document.createElement('div');
+            css(overlay, {
+                'display': 'none',
+                'position': 'fixed',
+                'background': 'rgba(0,0,0,0.65)',
+                'width': '100%',
+                'height': '100%',
+                'z-index': 99999,
+                'top': 0,
+                'left': 0
+            });
+            overlay.id = 'boxzilla-overlay';
+            document.body.appendChild(overlay);
+
+            // event binds
+            window.addEventListener('scroll', throttle(checkHeightCriteria));
+            window.addEventListener('resize', throttle(recalculateHeights));
+            window.addEventListener('load', recalculateHeights);
+            overlay.addEventListener('click', onOverlayClick);
+            window.setInterval(checkTimeCriteria, 1000);
+            window.setTimeout(checkPageViewsCriteria, 1000);
+            document.addEventListener('mouseleave', onMouseLeave);
+            document.addEventListener('mouseenter', onMouseEnter);
+            document.addEventListener('keyup', onKeyUp);
+
+            timers.start();
+            window.addEventListener('focus', timers.start);
+            window.addEventListener('beforeunload', function () {
+                timers.stop();
+                sessionStorage.setItem('boxzilla_pageviews', ++pageViews);
+            });
+            window.addEventListener('blur', timers.stop);
+
+            Boxzilla.trigger('ready');
+        };
+
+        /**
+         * Create a new Box
+         *
+         * @param string id
+         * @param object opts
+         *
+         * @returns Box
+         */
+        Boxzilla.create = function (id, opts) {
+            boxes[id] = new Box(id, opts);
+            return boxes[id];
+        };
+
+        // dismiss a single box (or all by omitting id param)
+        Boxzilla.dismiss = function (id) {
+            // if no id given, dismiss all current open boxes
+            if (typeof id === "undefined") {
+                each(boxes, function (box) {
+                    box.dismiss();
+                });
+            } else if (_typeof(boxes[id]) === "object") {
+                boxes[id].dismiss();
+            }
+        };
+
+        Boxzilla.hide = function (id) {
+            if (typeof id === "undefined") {
+                each(boxes, function (box) {
+                    box.hide();
+                });
+            } else if (_typeof(boxes[id]) === "object") {
+                boxes[id].hide();
+            }
+        };
+
+        Boxzilla.show = function (id) {
+            if (typeof id === "undefined") {
+                each(boxes, function (box) {
+                    box.show();
+                });
+            } else if (_typeof(boxes[id]) === "object") {
+                boxes[id].show();
+            }
+        };
+
+        Boxzilla.toggle = function (id) {
+            if (typeof id === "undefined") {
+                each(boxes, function (box) {
+                    box.toggle();
+                });
+            } else if (_typeof(boxes[id]) === "object") {
+                boxes[id].toggle();
+            }
+        };
+
+        window.Boxzilla = Boxzilla;
+
+        if (typeof module !== 'undefined' && module.exports) {
+            module.exports = Boxzilla;
+        }
+    }, { "./box.js": 3, "./css.js": 5, "./styles.js": 6, "./timer.js": 7, "wolfy87-eventemitter": 1 }], 5: [function (require, module, exports) {
+        function camelCase(string) {
+            return string.replace('-', '');
+        }
+
+        function css(element, styles) {
+            for (var prop in styles) {
+                element.style[camelCase(prop)] = styles[prop];
+            }
+        }
+
+        module.exports = css;
+    }, {}], 6: [function (require, module, exports) {
+        var styles = ".boxzilla-center-container{position:fixed;top:0;left:0;right:0;height:0;text-align:center;z-index:999999;line-height:0}.boxzilla-center-container .boxzilla{display:inline-block;text-align:left;position:relative;line-height:normal}.boxzilla{position:fixed;z-index:999999;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;background:#fff;padding:25px}.boxzilla.boxzilla-top-left{top:0;left:0}.boxzilla.boxzilla-top-right{top:0;right:0}.boxzilla.boxzilla-bottom-left{bottom:0;left:0}.boxzilla.boxzilla-bottom-right{bottom:0;right:0}.boxzilla-content>:first-child{margin-top:0;padding-top:0}.boxzilla-content>:last-child{margin-bottom:0;padding-bottom:0}.boxzilla-close-icon{position:absolute;right:0;top:0;text-align:center;padding:6px;cursor:pointer;-webkit-appearance:none;font-size:28px;font-weight:700;line-height:20px;color:#000;opacity:.5}.boxzilla-close-icon:focus,.boxzilla-close-icon:hover{opacity:.8}";
+        module.exports = styles;
+    }, {}], 7: [function (require, module, exports) {
+        'use strict';
+
+        var Timer = function Timer(start) {
+            this.time = start;
+            this.interval = 0;
+        };
+
+        Timer.prototype.tick = function () {
+            this.time++;
+        };
+
+        Timer.prototype.start = function () {
+            if (!this.interval) {
+                this.interval = window.setInterval(this.tick.bind(this), 1000);
+            }
+        };
+
+        Timer.prototype.stop = function () {
+            window.clearInterval(this.interval);
+            this.interval = 0;
+        };
+
+        module.exports = Timer;
+    }, {}] }, {}, [4]);

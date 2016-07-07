@@ -1,17 +1,33 @@
 'use strict';
 
+const browserify = require('browserify');
 const gulp = require('gulp');
+const source = require('vinyl-source-stream');
+const buffer = require('vinyl-buffer');
 const uglify = require('gulp-uglify');
 const sourcemaps = require('gulp-sourcemaps');
 const gutil = require('gulp-util');
 const rename = require('gulp-rename');
 const babel = require('gulp-babel');
-const webpack = require('webpack-stream');
-const webpackConfig = require('./webpack.config.js');
+const insert = require('gulp-insert');
+const cssmin = require('gulp-cssmin');
 
-gulp.task('default', function () {
-    return gulp.src('./src/boxzilla.js')
-        .pipe(webpack(webpackConfig).on('error', gutil.log))
+gulp.task('js-styles', function() {
+    return gulp.src('./src/styles.css')
+        .pipe(cssmin())
+        .pipe(insert.wrap('const styles = `', '`; \nmodule.exports = styles;'))
+        .pipe(rename({extname: '.js'}))
+        .pipe(gulp.dest('./src'));
+});
+
+gulp.task('default', ['js-styles'], function () {
+
+    return browserify({
+            entries: 'src/boxzilla.js'
+        }).on('error', gutil.log)
+        .bundle()
+        .pipe(source('boxzilla.js'))
+        .pipe(buffer())
         .pipe(babel({
             presets: ['es2015']
         }))

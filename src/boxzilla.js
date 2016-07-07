@@ -10,8 +10,6 @@ var EventEmitter = require('wolfy87-eventemitter'),
     exitIntentDelayTimer, exitIntentTriggered,
     siteTimer, pageTimer, pageViews;
 
-require('./styles.css');
-
 function each( obj, callback ) {
     for( var key in obj ) {
         if(! obj.hasOwnProperty(key)) continue;
@@ -172,6 +170,14 @@ Boxzilla.init = function() {
     pageTimer = new Timer(0);
     pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
     windowHeight = window.innerHeight;
+
+    // insert styles into DOM
+    var styles = require('./styles.js');
+    console.log(styles);
+    var styleElement = document.createElement('style');
+    styleElement.setAttribute("type", "text/css");
+    styleElement.innerHTML = styles;
+    document.head.appendChild(styleElement);
 
     // add overlay element to dom
     overlay = document.createElement('div');
