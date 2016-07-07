@@ -13,7 +13,7 @@ var defaults = {
         'closable': true
     },
     Boxzilla,
-    Animator = require('./Animator.js');
+    Animator = require('./animator.js');
 
 /**
  * Merge 2 objects, values of the latter overwriting the former.
@@ -45,6 +45,8 @@ var Box = function( id, config ) {
     this.triggered 	= false;
     this.triggerHeight = 0;
     this.cookieSet = false;
+    this.element = null;
+    this.closeIcon = null;
 
     // if a trigger was given, calculate values once and store
     if( this.config.trigger ) {
@@ -55,8 +57,8 @@ var Box = function( id, config ) {
         this.cookieSet = this.isCookieSet();
     }
 
-    // create dom element for this box
-    this.element = this.dom();
+    // create dom elements for this box
+    this.dom();
 
     // further initialise the box
     this.events();
@@ -67,7 +69,7 @@ Box.prototype.events = function() {
     var box = this;
 
     // attach event to "close" icon inside box
-    this.element.querySelector('.boxzilla-close-icon').addEventListener('click', box.dismiss.bind(this));
+    this.closeIcon && this.closeIcon.addEventListener('click', box.dismiss.bind(this));
 
     this.element.addEventListener('click', function(e) {
         if( e.target.tagName === 'A' ) {
@@ -132,15 +134,15 @@ Box.prototype.dom = function() {
     }
     
     if( this.config.closable && this.config.icon ) {
-        var icon = document.createElement('span');
-        icon.className = "boxzilla-close-icon";
-        icon.innerHTML = this.config.icon;
-        box.appendChild(icon);
+        var closeIcon = document.createElement('span');
+        closeIcon.className = "boxzilla-close-icon";
+        closeIcon.innerHTML = this.config.icon;
+        box.appendChild(closeIcon);
+        this.closeIcon = closeIcon;
     }
 
     document.body.appendChild(wrapper);
-
-    return box;
+    this.element = box;
 };
 
 // set (calculate) custom box styling depending on box options

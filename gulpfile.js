@@ -1,24 +1,21 @@
 'use strict';
 
-var browserify = require('browserify');
-var gulp = require('gulp');
-var source = require('vinyl-source-stream');
-var buffer = require('vinyl-buffer');
-var uglify = require('gulp-uglify');
-var sourcemaps = require('gulp-sourcemaps');
-var gutil = require('gulp-util');
-var rename = require('gulp-rename');
+const gulp = require('gulp');
+const uglify = require('gulp-uglify');
+const sourcemaps = require('gulp-sourcemaps');
+const gutil = require('gulp-util');
+const rename = require('gulp-rename');
+const babel = require('gulp-babel');
+const webpack = require('webpack-stream');
+const webpackConfig = require('./webpack.config.js');
 
 gulp.task('default', function () {
-    // set up the browserify instance on a task basis
-    var b = browserify({
-        entries: './src/Boxzilla.js'
-    });
-
-    return b.bundle()
-        .pipe(source('boxzilla.js'))
+    return gulp.src('./src/boxzilla.js')
+        .pipe(webpack(webpackConfig).on('error', gutil.log))
+        .pipe(babel({
+            presets: ['es2015']
+        }))
         .pipe(gulp.dest('./dist/'))
-        .pipe(buffer())
         .pipe(sourcemaps.init({loadMaps: true}))
         // Add transformation tasks to the pipeline here.
         .pipe(uglify())
