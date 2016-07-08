@@ -528,6 +528,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
             // create clone for reference
             var clone = element.cloneNode(true);
+            var cleanup = function cleanup() {
+                element.removeAttribute('data-animated');
+                element.setAttribute('style', clone.getAttribute('style'));
+                element.style.display = nowVisible ? 'none' : '';
+            };
 
             // store attribute so everyone knows we're animating this element
             element.setAttribute('data-animated', "true");
@@ -552,7 +557,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
                 // don't show a scrollbar during animation
                 element.style.overflowY = 'hidden';
-                animate(element, nowVisible ? hiddenStyles : visibleStyles);
+                animate(element, nowVisible ? hiddenStyles : visibleStyles, cleanup);
             } else {
                 hiddenStyles = { opacity: 0 };
                 visibleStyles = { opacity: 1 };
@@ -560,18 +565,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     css(element, hiddenStyles);
                 }
 
-                animate(element, nowVisible ? hiddenStyles : visibleStyles);
+                animate(element, nowVisible ? hiddenStyles : visibleStyles, cleanup);
             }
-
-            // clean-up after animation
-            window.setTimeout(function () {
-                element.removeAttribute('data-animated');
-                element.setAttribute('style', clone.getAttribute('style'));
-                element.style.display = nowVisible ? 'none' : '';
-            }, duration * 1.2);
         }
 
-        function animate(element, targetStyles) {
+        function animate(element, targetStyles, fn) {
             var last = +new Date();
             var initialStyles = window.getComputedStyle(element);
             var currentStyles = {};
@@ -584,6 +582,13 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 // calculate step size & current value
                 var to = targetStyles[property];
                 var current = parseFloat(initialStyles[property]);
+
+                // is there something to do?
+                if (current == to) {
+                    delete targetStyles[property];
+                    continue;
+                }
+
                 propSteps[property] = (to - current) / duration; // points per second
                 currentStyles[property] = current;
             }
@@ -618,6 +623,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 // keep going until we're done for all props
                 if (!done) {
                     window.requestAnimationFrame && requestAnimationFrame(tick) || setTimeout(tick, 32);
+                } else {
+                    // call callback
+                    fn && fn();
                 }
             };
 
@@ -626,6 +634,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         module.exports = {
             'toggle': toggle,
+            'animate': animate,
             'animated': animated
         };
     }, {}], 3: [function (require, module, exports) {
