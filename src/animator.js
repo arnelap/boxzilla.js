@@ -150,5 +150,6 @@ function animate(element, targetStyles, fn) {
 
 module.exports = {
     'toggle': toggle,
+    'animate': animate,
     'animated': animated
-}
+};
