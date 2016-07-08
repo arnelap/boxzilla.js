@@ -97,6 +97,13 @@ function animate(element, targetStyles, fn) {
         // calculate step size & current value
         var to = targetStyles[property];
         var current = parseFloat(initialStyles[property]);
+
+        // is there something to do?
+        if( current == to ) {
+            delete targetStyles[property];
+            continue;
+        }
+
         propSteps[property] = ( to - current ) / duration; // points per second
         currentStyles[property] = current;
     }
