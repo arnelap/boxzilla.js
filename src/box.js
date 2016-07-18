@@ -4,7 +4,7 @@ var defaults = {
         'animation': 'fade',
         'rehide': false,
         'content': '',
-        'cookieTime': 0,
+        'cookie': null,
         'icon': '&times',
         'minimumScreenWidth': 0,
         'position': 'center',
@@ -41,7 +41,7 @@ var Box = function( id, config ) {
 
     // state
     this.visible 	= false;
-    this.closed 	= false;
+    this.dismissed 	= false;
     this.triggered 	= false;
     this.triggerHeight = 0;
     this.cookieSet = false;
@@ -249,18 +249,6 @@ Box.prototype.calculateTriggerHeight = function() {
     return triggerHeight;
 };
 
-// set cookie that disables automatically showing the box
-Box.prototype.setCookie = function() {
-    // do nothing if cookieTime evaluates to false
-    if(! this.config.cookieTime) {
-        return;
-    }
-
-    var expiryDate = new Date();
-    expiryDate.setDate( expiryDate.getDate() + this.config.cookieTime );
-    document.cookie = 'boxzilla_box_'+ this.id + '=true; expires='+ expiryDate.toUTCString() +'; path=/';
-};
-
 // checks whether window.location.hash equals the box element ID or that of any element inside the box
 Box.prototype.locationHashRefersBox = function() {
 
@@ -289,8 +277,7 @@ Box.prototype.fits = function() {
 // is this box enabled?
 Box.prototype.mayAutoShow = function() {
 
-    // don't show if box was closed (dismissed) before
-    if( this.closed ) {
+    if( this.dismissed ) {
         return false;
     }
 
@@ -314,31 +301,46 @@ Box.prototype.mayRehide = function() {
 
 Box.prototype.isCookieSet = function() {
     // always show on test mode
-    if( this.config.testMode ) {
+    if(this.config.testMode) {
         return false;
     }
 
-    // check for cookie
-    if( ! this.config.cookieTime ) {
+    // if either cookie is null or trigger & dismiss are both falsey, don't bother checking.
+    if(!this.config.cookie || ( ! this.config.cookie.triggered && ! this.config.cookie.dismissed ) ) {
         return false;
     }
 
     var cookieSet = document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'boxzilla_box_' + this.id + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1") === "true";
     return cookieSet;
+};
 
+// set cookie that disables automatically showing the box
+Box.prototype.setCookie = function(hours) {
+    var expiryDate = new Date();
+    expiryDate.setHours( expiryDate.getHours() + hours);
+    document.cookie = 'boxzilla_box_'+ this.id + '=true; expires='+ expiryDate.toUTCString() +'; path=/';
 };
 
 Box.prototype.trigger = function() {
     var shown = this.show();
-    if( shown ) {
-        this.triggered = true;
+    if( ! shown ) {
+        return;
+    }
+
+    this.triggered = true;
+    if(this.config.cookie && this.config.cookie.triggered) {
+        this.setCookie(this.config.cookie.triggered);
     }
 };
 
 Box.prototype.dismiss = function() {
     this.hide();
-    this.setCookie();
-    this.closed = true;
+
+    if(this.config.cookie && this.config.cookie.dismissed) {
+        this.setCookie(this.config.cookie.dismissed);
+    }
+
+    this.dismissed = true;
     Boxzilla.trigger('box.dismiss', [ this ]);
 };
 
