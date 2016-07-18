@@ -48,7 +48,10 @@ The following configuration values are accepted as the second argument for the `
     },
     'icon': '&times',           // string, close icon character
     'animation': 'fade',        // "fade" or "slide"
-    'cookieTime': 0,            // integer, number of days a box should be hidden when dismissed
+    'cookie': {
+        'dismissed': 24,        // hours that a box should stay hidden after being dismissed
+        'triggered': 1          // hours that a box should stay hidden after being triggered
+    },            // integer, number of days a box should be hidden when dismissed
     'minimumScreenWidth': 0,    // integer, box won't show on screens smaller than this
     'rehide': false,            // boolean, whether box should rehide when certain triggers are no longer met.
     'position': 'center',       // "center", "bottom-right", "top-left", etc.
