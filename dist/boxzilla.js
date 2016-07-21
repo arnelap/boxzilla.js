@@ -673,6 +673,19 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             return obj3;
         }
 
+        /**
+         * Get the real height of entire document.
+         * @returns {number}
+         */
+        function getDocumentHeight() {
+            var body = document.body,
+                html = document.documentElement;
+
+            var height = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
+
+            return height;
+        }
+
         // Box Object
         var Box = function Box(id, config) {
             this.id = id;
@@ -726,22 +739,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 Boxzilla.trigger('box.interactions.form', [box, e.target]);
             }, false);
 
-            // listen to all "click" events
-            document.body.addEventListener('click', function (e) {
-
-                // only act on links
-                if (e.target.tagName !== 'A') {
-                    return;
-                }
-
-                // check if link href ends with "#boxzilla-{box.id}
+            window.addEventListener("hashchange", function () {
                 var needle = "#boxzilla-" + box.id;
-                var haystack = e.target.getAttribute("href");
-                if (haystack && haystack.substring(-needle.length) === needle) {
+                if (location.hash === needle) {
                     box.toggle();
-                    e.preventDefault();
                 }
-            }, false);
+            });
 
             // maybe show box right away
             if (this.fits() && this.locationHashRefersBox()) {
@@ -886,7 +889,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     triggerHeight = offset.top;
                 }
             } else if (this.config.trigger.method === 'percentage') {
-                triggerHeight = this.config.trigger.value / 100 * document.body.clientHeight;
+                triggerHeight = this.config.trigger.value / 100 * getDocumentHeight();
             }
 
             return triggerHeight;
@@ -999,7 +1002,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             Box = require('./box.js')(Boxzilla),
             Timer = require('./timer.js'),
             boxes = {},
-            windowHeight,
             overlay,
             exitIntentDelayTimer,
             exitIntentTriggered,
@@ -1077,15 +1079,15 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // check triggerHeight criteria for all boxes
         function checkHeightCriteria() {
-            var scrollY = window.scrollY;
-            var scrollHeight = scrollY + windowHeight * 0.667;
+            var scrollY = (window.scrollY || window.pageYOffset) + window.innerHeight * 0.75;
 
             each(boxes, function (box) {
+
                 if (!box.mayAutoShow() || box.triggerHeight <= 0) {
                     return;
                 }
 
-                if (scrollHeight > box.triggerHeight) {
+                if (scrollY > box.triggerHeight) {
                     box.trigger();
                 } else if (box.mayRehide()) {
                     box.hide();
@@ -1095,8 +1097,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // recalculate heights and variables based on height
         function recalculateHeights() {
-            windowHeight = window.innerHeight;
-
             each(boxes, function (box) {
                 box.setCustomBoxStyling();
             });
@@ -1165,7 +1165,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
             pageTimer = new Timer(0);
             pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
-            windowHeight = window.innerHeight;
 
             // insert styles into DOM
             var styles = require('./styles.js');
