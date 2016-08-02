@@ -249,6 +249,9 @@ Boxzilla.toggle = function(id) {
     }
 };
 
+// expose each individual box.
+Boxzilla.boxes = boxes;
+
 window.Boxzilla = Boxzilla;
 
 if ( typeof module !== 'undefined' && module.exports ) {
