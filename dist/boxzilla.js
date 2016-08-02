@@ -1186,8 +1186,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             overlay.addEventListener('click', onOverlayClick);
             window.setInterval(checkTimeCriteria, 1000);
             window.setTimeout(checkPageViewsCriteria, 1000);
-            document.addEventListener('mouseleave', onMouseLeave);
-            document.addEventListener('mouseenter', onMouseEnter);
+            document.documentElement.addEventListener('mouseleave', onMouseLeave);
+            document.documentElement.addEventListener('mouseenter', onMouseEnter);
             document.addEventListener('keyup', onKeyUp);
 
             timers.start();
@@ -1255,6 +1255,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 boxes[id].toggle();
             }
         };
+
+        // expose each individual box.
+        Boxzilla.boxes = boxes;
 
         window.Boxzilla = Boxzilla;
 
