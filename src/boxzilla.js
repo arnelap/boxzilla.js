@@ -4,17 +4,10 @@ var EventEmitter = require('wolfy87-eventemitter'),
     Boxzilla = Object.create(EventEmitter.prototype),
     Box = require('./box.js')(Boxzilla),
     Timer = require('./timer.js'),
-    boxes = {},
+    boxes = [],
     overlay,
     exitIntentDelayTimer, exitIntentTriggered,
     siteTimer, pageTimer, pageViews;
-
-function each( obj, callback ) {
-    for( var key in obj ) {
-        if(! obj.hasOwnProperty(key)) continue;
-        callback(obj[key]);
-    }
-}
 
 function throttle(fn, threshhold, scope) {
     threshhold || (threshhold = 250);
@@ -48,7 +41,13 @@ function onKeyUp(e) {
 
 // check "pageviews" criteria for each box
 function checkPageViewsCriteria() {
-    each(boxes, function(box) {
+
+    // don't bother if another box is currently open
+    if( isAnyBoxVisible() ) {
+        return;
+    }
+
+    boxes.forEach(function(box) {
         if( ! box.mayAutoShow() ) {
             return;
         }
@@ -61,7 +60,12 @@ function checkPageViewsCriteria() {
 
 // check time trigger criteria for each box
 function checkTimeCriteria() {
-    each(boxes, function(box) {
+    // don't bother if another box is currently open
+    if( isAnyBoxVisible() ) {
+        return;
+    }
+
+    boxes.forEach(function(box) {
         if( ! box.mayAutoShow() ) {
             return;
         }
@@ -82,7 +86,12 @@ function checkTimeCriteria() {
 function checkHeightCriteria() {
     var scrollY = ( window.scrollY || window.pageYOffset ) + window.innerHeight * 0.75;
 
-    each(boxes, function(box) {
+    // don't bother if another box is currently open
+    if( isAnyBoxVisible() ) {
+        return;
+    }
+
+    boxes.forEach(function(box) {
 
         if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
             return;
@@ -98,7 +107,7 @@ function checkHeightCriteria() {
 
 // recalculate heights and variables based on height
 function recalculateHeights() {
-    each(boxes, function(box) {
+    boxes.forEach(function(box) {
         box.setCustomBoxStyling();
     });
 }
@@ -108,7 +117,7 @@ function onOverlayClick(e) {
     var y = e.offsetY;
 
     // calculate if click was near a box to avoid closing it (click error margin)
-    each(boxes, function(box) {
+    boxes.forEach(function(box) {
         var rect = box.element.getBoundingClientRect();
         var margin = 100 + ( window.innerWidth * 0.05 );
 
@@ -120,9 +129,12 @@ function onOverlayClick(e) {
 }
 
 function triggerExitIntent() {
-    if(exitIntentTriggered) return;
+    // do nothing if already triggered OR another box is visible.
+    if(exitIntentTriggered || isAnyBoxVisible() ) {
+        return;
+    }
 
-    each(boxes, function(box) {
+    boxes.forEach(function(box) {
         if(box.mayAutoShow() && box.config.trigger.method === 'exit_intent' ) {
             box.trigger();
         }
@@ -138,6 +150,19 @@ function onMouseLeave(e) {
     if( e.clientY <= 0 ) {
         exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
     }
+}
+
+function isAnyBoxVisible() {
+
+    for( var i=0; i<boxes.length; i++ ) {
+        var box = boxes[i];
+
+        if( box.visible ) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function onMouseEnter() {
@@ -211,41 +236,51 @@ Boxzilla.init = function() {
  * @returns Box
  */
 Boxzilla.create = function(id, opts) {
-    boxes[id] = new Box(id, opts);
-    return boxes[id];
+    var box = new Box(id, opts);
+    boxes.push(box);
+    return box;
 };
+
+Boxzilla.get = function(id) {
+    for( var i=0; i<boxes.length; i++) {
+        var box = boxes[i];
+        if( box.id == id ) {
+            return box;
+        }
+    }
+}
 
 // dismiss a single box (or all by omitting id param)
 Boxzilla.dismiss = function(id) {
     // if no id given, dismiss all current open boxes
     if( typeof(id) === "undefined" ) {
-        each(boxes, function(box) { box.dismiss(); });
+        boxes.forEach(function(box) { box.dismiss(); });
     } else if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].dismiss();
+        Boxzilla.get(id).dismiss();
     }
 };
 
 Boxzilla.hide = function(id) {
     if( typeof(id) === "undefined" ) {
-        each(boxes, function(box) { box.hide(); });
-    } else if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].hide();
+        boxes.forEach(function(box) { box.hide(); });
+    } else {
+        Boxzilla.get(id).hide();
     }
 };
 
 Boxzilla.show = function(id) {
     if( typeof(id) === "undefined" ) {
-        each(boxes, function(box) { box.show(); });
+        boxes.forEach(function(box) { box.show(); });
     } else if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].show();
+        Boxzilla.get(id).show();
     }
 };
 
 Boxzilla.toggle = function(id) {
     if( typeof(id) === "undefined" ) {
-        each(boxes, function(box) { box.toggle(); });
+        boxes.forEach(function(box) { box.toggle(); });
     } else if( typeof( boxes[id] ) === "object" ) {
-        boxes[id].toggle();
+        Boxzilla.get(id).toggle();
     }
 };
 

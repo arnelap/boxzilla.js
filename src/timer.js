@@ -16,8 +16,10 @@ Timer.prototype.start = function() {
 };
 
 Timer.prototype.stop = function() {
-    window.clearInterval(this.interval);
-    this.interval = 0;
+    if( this.interval ) {
+        window.clearInterval(this.interval);
+        this.interval = 0;
+    }
 };
 
 module.exports = Timer;

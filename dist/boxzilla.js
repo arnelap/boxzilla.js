@@ -1001,20 +1001,13 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             Boxzilla = Object.create(EventEmitter.prototype),
             Box = require('./box.js')(Boxzilla),
             Timer = require('./timer.js'),
-            boxes = {},
+            boxes = [],
             overlay,
             exitIntentDelayTimer,
             exitIntentTriggered,
             siteTimer,
             pageTimer,
             pageViews;
-
-        function each(obj, callback) {
-            for (var key in obj) {
-                if (!obj.hasOwnProperty(key)) continue;
-                callback(obj[key]);
-            }
-        }
 
         function throttle(fn, threshhold, scope) {
             threshhold || (threshhold = 250);
@@ -1047,7 +1040,13 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // check "pageviews" criteria for each box
         function checkPageViewsCriteria() {
-            each(boxes, function (box) {
+
+            // don't bother if another box is currently open
+            if (isAnyBoxVisible()) {
+                return;
+            }
+
+            boxes.forEach(function (box) {
                 if (!box.mayAutoShow()) {
                     return;
                 }
@@ -1060,7 +1059,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // check time trigger criteria for each box
         function checkTimeCriteria() {
-            each(boxes, function (box) {
+            // don't bother if another box is currently open
+            if (isAnyBoxVisible()) {
+                return;
+            }
+
+            boxes.forEach(function (box) {
                 if (!box.mayAutoShow()) {
                     return;
                 }
@@ -1081,7 +1085,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         function checkHeightCriteria() {
             var scrollY = (window.scrollY || window.pageYOffset) + window.innerHeight * 0.75;
 
-            each(boxes, function (box) {
+            // don't bother if another box is currently open
+            if (isAnyBoxVisible()) {
+                return;
+            }
+
+            boxes.forEach(function (box) {
 
                 if (!box.mayAutoShow() || box.triggerHeight <= 0) {
                     return;
@@ -1097,7 +1106,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // recalculate heights and variables based on height
         function recalculateHeights() {
-            each(boxes, function (box) {
+            boxes.forEach(function (box) {
                 box.setCustomBoxStyling();
             });
         }
@@ -1107,7 +1116,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             var y = e.offsetY;
 
             // calculate if click was near a box to avoid closing it (click error margin)
-            each(boxes, function (box) {
+            boxes.forEach(function (box) {
                 var rect = box.element.getBoundingClientRect();
                 var margin = 100 + window.innerWidth * 0.05;
 
@@ -1119,9 +1128,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         }
 
         function triggerExitIntent() {
-            if (exitIntentTriggered) return;
+            // do nothing if already triggered OR another box is visible.
+            if (exitIntentTriggered || isAnyBoxVisible()) {
+                return;
+            }
 
-            each(boxes, function (box) {
+            boxes.forEach(function (box) {
                 if (box.mayAutoShow() && box.config.trigger.method === 'exit_intent') {
                     box.trigger();
                 }
@@ -1137,6 +1149,19 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             if (e.clientY <= 0) {
                 exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
             }
+        }
+
+        function isAnyBoxVisible() {
+
+            for (var i = 0; i < boxes.length; i++) {
+                var box = boxes[i];
+
+                if (box.visible) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         function onMouseEnter() {
@@ -1210,49 +1235,59 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
          * @returns Box
          */
         Boxzilla.create = function (id, opts) {
-            boxes[id] = new Box(id, opts);
-            return boxes[id];
+            var box = new Box(id, opts);
+            boxes.push(box);
+            return box;
+        };
+
+        Boxzilla.get = function (id) {
+            for (var i = 0; i < boxes.length; i++) {
+                var box = boxes[i];
+                if (box.id == id) {
+                    return box;
+                }
+            }
         };
 
         // dismiss a single box (or all by omitting id param)
         Boxzilla.dismiss = function (id) {
             // if no id given, dismiss all current open boxes
             if (typeof id === "undefined") {
-                each(boxes, function (box) {
+                boxes.forEach(function (box) {
                     box.dismiss();
                 });
             } else if (_typeof(boxes[id]) === "object") {
-                boxes[id].dismiss();
+                Boxzilla.get(id).dismiss();
             }
         };
 
         Boxzilla.hide = function (id) {
             if (typeof id === "undefined") {
-                each(boxes, function (box) {
+                boxes.forEach(function (box) {
                     box.hide();
                 });
-            } else if (_typeof(boxes[id]) === "object") {
-                boxes[id].hide();
+            } else {
+                Boxzilla.get(id).hide();
             }
         };
 
         Boxzilla.show = function (id) {
             if (typeof id === "undefined") {
-                each(boxes, function (box) {
+                boxes.forEach(function (box) {
                     box.show();
                 });
             } else if (_typeof(boxes[id]) === "object") {
-                boxes[id].show();
+                Boxzilla.get(id).show();
             }
         };
 
         Boxzilla.toggle = function (id) {
             if (typeof id === "undefined") {
-                each(boxes, function (box) {
+                boxes.forEach(function (box) {
                     box.toggle();
                 });
             } else if (_typeof(boxes[id]) === "object") {
-                boxes[id].toggle();
+                Boxzilla.get(id).toggle();
             }
         };
 
@@ -1286,8 +1321,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         };
 
         Timer.prototype.stop = function () {
-            window.clearInterval(this.interval);
-            this.interval = 0;
+            if (this.interval) {
+                window.clearInterval(this.interval);
+                this.interval = 0;
+            }
         };
 
         module.exports = Timer;
