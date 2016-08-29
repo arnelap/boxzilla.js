@@ -1085,11 +1085,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         function checkHeightCriteria() {
             var scrollY = (window.scrollY || window.pageYOffset) + window.innerHeight * 0.75;
 
-            // don't bother if another box is currently open
-            if (isAnyBoxVisible()) {
-                return;
-            }
-
             boxes.forEach(function (box) {
 
                 if (!box.mayAutoShow() || box.triggerHeight <= 0) {
@@ -1097,6 +1092,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 }
 
                 if (scrollY > box.triggerHeight) {
+                    // don't bother if another box is currently open
+                    if (isAnyBoxVisible()) {
+                        return;
+                    }
+
+                    // trigger box
                     box.trigger();
                 } else if (box.mayRehide()) {
                     box.hide();
@@ -1247,6 +1248,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     return box;
                 }
             }
+
+            throw new Error("No box exists with ID " + id);
         };
 
         // dismiss a single box (or all by omitting id param)
@@ -1276,7 +1279,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 boxes.forEach(function (box) {
                     box.show();
                 });
-            } else if (_typeof(boxes[id]) === "object") {
+            } else {
                 Boxzilla.get(id).show();
             }
         };
@@ -1286,7 +1289,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 boxes.forEach(function (box) {
                     box.toggle();
                 });
-            } else if (_typeof(boxes[id]) === "object") {
+            } else {
                 Boxzilla.get(id).toggle();
             }
         };

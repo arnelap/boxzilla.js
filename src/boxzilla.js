@@ -86,11 +86,6 @@ function checkTimeCriteria() {
 function checkHeightCriteria() {
     var scrollY = ( window.scrollY || window.pageYOffset ) + window.innerHeight * 0.75;
 
-    // don't bother if another box is currently open
-    if( isAnyBoxVisible() ) {
-        return;
-    }
-
     boxes.forEach(function(box) {
 
         if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
@@ -98,6 +93,12 @@ function checkHeightCriteria() {
         }
 
         if( scrollY > box.triggerHeight ) {
+            // don't bother if another box is currently open
+            if( isAnyBoxVisible() ) {
+                return;
+            }
+
+            // trigger box
             box.trigger();
         } else if( box.mayRehide() ) {
             box.hide();
@@ -248,6 +249,8 @@ Boxzilla.get = function(id) {
             return box;
         }
     }
+
+    throw new Error("No box exists with ID " + id);
 }
 
 // dismiss a single box (or all by omitting id param)
@@ -271,7 +274,7 @@ Boxzilla.hide = function(id) {
 Boxzilla.show = function(id) {
     if( typeof(id) === "undefined" ) {
         boxes.forEach(function(box) { box.show(); });
-    } else if( typeof( boxes[id] ) === "object" ) {
+    } else {
         Boxzilla.get(id).show();
     }
 };
@@ -279,7 +282,7 @@ Boxzilla.show = function(id) {
 Boxzilla.toggle = function(id) {
     if( typeof(id) === "undefined" ) {
         boxes.forEach(function(box) { box.toggle(); });
-    } else if( typeof( boxes[id] ) === "object" ) {
+    } else {
         Boxzilla.get(id).toggle();
     }
 };
