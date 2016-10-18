@@ -1,5 +1,10 @@
 'use strict';
 
+// failsafe against loading script twice...
+if( window.Boxzilla ) {
+    return;
+}
+
 var EventEmitter = require('wolfy87-eventemitter'),
     Boxzilla = Object.create(EventEmitter.prototype),
     Box = require('./box.js')(Boxzilla),
