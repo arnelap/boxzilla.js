@@ -212,6 +212,7 @@ Box.prototype.toggle = function(show) {
 
     // show or hide box using selected animation
     if( this.config.position === 'center' ) {
+        this.overlay.classList.toggle('boxzilla-' + this.id + '-overlay');
         Animator.toggle(this.overlay, "fade");
     }
 
