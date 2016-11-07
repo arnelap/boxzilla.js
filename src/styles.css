@@ -1,3 +1,8 @@
+
+body {
+    -webkit-overflow-scrolling:touch !important;
+}
+
 #boxzilla-overlay {
     position: fixed;
     background: rgba(0, 0, 0, 0.65 );
