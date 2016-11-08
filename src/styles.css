@@ -1,6 +1,9 @@
 
-body {
-    -webkit-overflow-scrolling:touch !important;
+/* disable scroll to bottom on mobile safari */
+@media( max-width: 780px ) {
+    html, body {
+        -webkit-overflow-scrolling: touch !important;
+    }
 }
 
 #boxzilla-overlay {
