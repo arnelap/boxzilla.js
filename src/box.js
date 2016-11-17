@@ -95,13 +95,6 @@ Box.prototype.events = function() {
         box.setCookie();
         Boxzilla.trigger('box.interactions.form', [ box, e.target ]);
     }, false);
-    
-    window.addEventListener("hashchange", function() {
-        var needle = "#boxzilla-" + box.id;
-        if( location.hash === needle ) {
-            box.toggle();
-        }
-    });
 
     // maybe show box right away
     if( this.fits() && this.locationHashRefersBox() ) {
@@ -136,7 +129,7 @@ Box.prototype.dom = function() {
         }
         document.body.appendChild(script);
     }
-    
+
     if( this.config.closable && this.config.icon ) {
         var closeIcon = document.createElement('span');
         closeIcon.className = "boxzilla-close-icon";

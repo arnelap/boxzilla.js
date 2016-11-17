@@ -173,6 +173,14 @@ function onMouseEnter() {
     }
 }
 
+function onElementClick(e) {
+    var el = e.target || e.srcElement;
+    if( el && el.tagName === 'A' && el.getAttribute('href').indexOf('#boxzilla-') === 0 ) {
+        var boxId = e.target.getAttribute('href').substring("#boxzilla-".length);
+        Boxzilla.toggle(boxId);
+    }
+}
+
 var timers = {
     start: function() {
         var sessionTime = sessionStorage.getItem('boxzilla_timer');
@@ -189,6 +197,7 @@ var timers = {
 
 // initialise & add event listeners
 Boxzilla.init = function() {
+    window.addEventListener('click', onElementClick, false);
     siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
     pageTimer = new Timer(0);
     pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
@@ -296,3 +305,4 @@ window.Boxzilla = Boxzilla;
 if ( typeof module !== 'undefined' && module.exports ) {
     module.exports = Boxzilla;
 }
+
