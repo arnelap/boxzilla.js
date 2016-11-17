@@ -739,13 +739,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 Boxzilla.trigger('box.interactions.form', [box, e.target]);
             }, false);
 
-            window.addEventListener("hashchange", function () {
-                var needle = "#boxzilla-" + box.id;
-                if (location.hash === needle) {
-                    box.toggle();
-                }
-            });
-
             // maybe show box right away
             if (this.fits() && this.locationHashRefersBox()) {
                 window.addEventListener('load', this.show.bind(this));
@@ -1015,12 +1008,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     }, { "./animator.js": 2 }], 4: [function (require, module, exports) {
         'use strict';
 
-        // failsafe against loading script twice...
-
-        if (window.Boxzilla) {
-            return;
-        }
-
         var EventEmitter = require('wolfy87-eventemitter'),
             Boxzilla = Object.create(EventEmitter.prototype),
             Box = require('./box.js')(Boxzilla),
@@ -1196,6 +1183,14 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             }
         }
 
+        function onElementClick(e) {
+            var el = e.target || e.srcElement;
+            if (el && el.tagName === 'A' && el.getAttribute('href').indexOf('#boxzilla-') === 0) {
+                var boxId = e.target.getAttribute('href').substring("#boxzilla-".length);
+                Boxzilla.toggle(boxId);
+            }
+        }
+
         var timers = {
             start: function start() {
                 var sessionTime = sessionStorage.getItem('boxzilla_timer');
@@ -1212,6 +1207,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // initialise & add event listeners
         Boxzilla.init = function () {
+            window.addEventListener('click', onElementClick, false);
             siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
             pageTimer = new Timer(0);
             pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
