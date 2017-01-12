@@ -202,6 +202,12 @@ Boxzilla.init = function() {
     pageTimer = new Timer(0);
     pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
 
+    // sniff user agent for mobile safari fix...(https://stackoverflow.com/questions/29001977/safari-in-ios8-is-scrolling-screen-when-fixed-elements-get-focus#29064810)
+    var ua = navigator.userAgent.toLowerCase();
+    if( ua.indexOf('safari') > -1 && ua.indexOf('mobile') > -1 ) {
+        document.documentElement.className = document.documentElement.className + ' mobile-safari';
+    }
+
     // insert styles into DOM
     var styles = require('./styles.js');
     var styleElement = document.createElement('style');
@@ -305,4 +311,3 @@ window.Boxzilla = Boxzilla;
 if ( typeof module !== 'undefined' && module.exports ) {
     module.exports = Boxzilla;
 }
-

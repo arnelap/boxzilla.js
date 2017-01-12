@@ -1,9 +1,20 @@
 
 /* disable scroll to bottom on mobile safari */
-@media( max-width: 780px ) {
-    html, body {
-        -webkit-overflow-scrolling: touch !important;
-    }
+.mobile-safari,
+.mobile-safari body {
+    -webkit-overflow-scrolling: touch !important;
+    overflow: auto !important;
+    height: 100% !important;
+    position: static !important;
+}
+
+.mobile-safari .boxzilla-center-container,
+.mobile-safari .boxzilla {
+    position: absolute;
+}
+
+.mobile-safari .boxzilla-center-container .boxzilla {
+  position: relative;
 }
 
 #boxzilla-overlay {
