@@ -40,3 +40,7 @@ gulp.task('default', ['js-styles'], function () {
         .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('./dist/'));
 });
+
+gulp.task('watch', ['default'], function() {
+  gulp.watch(['src/*.js', 'src/*.css'], ['default']);
+});

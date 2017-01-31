@@ -6,6 +6,7 @@ var EventEmitter = require('wolfy87-eventemitter'),
     Timer = require('./timer.js'),
     boxes = [],
     overlay,
+    scrollElement = window,
     exitIntentDelayTimer, exitIntentTriggered,
     siteTimer, pageTimer, pageViews;
 
@@ -84,26 +85,26 @@ function checkTimeCriteria() {
 
 // check triggerHeight criteria for all boxes
 function checkHeightCriteria() {
-    var scrollY = ( window.scrollY || window.pageYOffset ) + window.innerHeight * 0.75;
+  var scrollY = scrollElement.hasOwnProperty('scrollY') ? scrollElement.scrollY : scrollElement.scrollTop;
+  scrollY = scrollY + window.innerHeight * 0.75;
 
-    boxes.forEach(function(box) {
+  boxes.forEach(function(box) {
+      if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
+          return;
+      }
 
-        if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
-            return;
-        }
+      if( scrollY > box.triggerHeight ) {
+          // don't bother if another box is currently open
+          if( isAnyBoxVisible() ) {
+              return;
+          }
 
-        if( scrollY > box.triggerHeight ) {
-            // don't bother if another box is currently open
-            if( isAnyBoxVisible() ) {
-                return;
-            }
-
-            // trigger box
-            box.trigger();
-        } else if( box.mayRehide() ) {
-            box.hide();
-        }
-    });
+          // trigger box
+          box.trigger();
+      } else if( box.mayRehide() ) {
+          box.hide();
+      }
+  });
 }
 
 // recalculate heights and variables based on height
@@ -205,7 +206,8 @@ Boxzilla.init = function() {
     // sniff user agent for mobile safari fix...(https://stackoverflow.com/questions/29001977/safari-in-ios8-is-scrolling-screen-when-fixed-elements-get-focus#29064810)
     var ua = navigator.userAgent.toLowerCase();
     if( ua.indexOf('safari') > -1 && ua.indexOf('mobile') > -1 ) {
-        document.documentElement.className = document.documentElement.className + ' mobile-safari';
+      scrollElement = document.body;
+      document.documentElement.className = document.documentElement.className + ' mobile-safari';
     }
 
     // insert styles into DOM
@@ -222,8 +224,7 @@ Boxzilla.init = function() {
     document.body.appendChild(overlay);
 
     // event binds
-    window.addEventListener('touchmove', throttle(checkHeightCriteria));
-    window.addEventListener('scroll', throttle(checkHeightCriteria));
+    scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
     window.addEventListener('resize', throttle(recalculateHeights));
     window.addEventListener('load', recalculateHeights );
     overlay.addEventListener('click', onOverlayClick);
