@@ -213,12 +213,6 @@ Box.prototype.toggle = function(show) {
 
     Animator.toggle(this.element, this.config.animation);
 
-    // focus on first input field in box
-    var firstInput = this.element.querySelector('input, textarea');
-    if(firstInput) {
-        firstInput.focus();
-    }
-
     return true;
 };
 

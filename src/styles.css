@@ -1,11 +1,4 @@
 
-/* disable scroll to bottom on mobile safari */
-.mobile-safari,
-.mobile-safari body {
-  -webkit-overflow-scrolling : touch !important;
-  overflow: auto !important;
-  height: 100% !important;
-}
 
 #boxzilla-overlay {
     position: fixed;

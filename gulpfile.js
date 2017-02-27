@@ -21,7 +21,6 @@ gulp.task('js-styles', function() {
 });
 
 gulp.task('default', ['js-styles'], function () {
-
     return browserify({
             entries: 'src/boxzilla.js'
         }).on('error', gutil.log)

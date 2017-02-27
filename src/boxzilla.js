@@ -85,8 +85,10 @@ function checkTimeCriteria() {
 
 // check triggerHeight criteria for all boxes
 function checkHeightCriteria() {
+
   var scrollY = scrollElement.hasOwnProperty('scrollY') ? scrollElement.scrollY : scrollElement.scrollTop;
   scrollY = scrollY + window.innerHeight * 0.75;
+    console.log(scrollY);
 
   boxes.forEach(function(box) {
       if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
@@ -184,8 +186,10 @@ function onElementClick(e) {
 
 var timers = {
     start: function() {
-        var sessionTime = sessionStorage.getItem('boxzilla_timer');
-        if( sessionTime ) siteTimer.time = sessionTime;
+        try{
+          var sessionTime = sessionStorage.getItem('boxzilla_timer');
+          if( sessionTime ) siteTimer.time = sessionTime;
+        } catch(e) {}
         siteTimer.start();
         pageTimer.start();
     },
@@ -198,17 +202,16 @@ var timers = {
 
 // initialise & add event listeners
 Boxzilla.init = function() {
-    window.addEventListener('click', onElementClick, false);
-    siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
-    pageTimer = new Timer(0);
-    pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
+    document.body.addEventListener('click', onElementClick, false);
 
-    // sniff user agent for mobile safari fix...(https://stackoverflow.com/questions/29001977/safari-in-ios8-is-scrolling-screen-when-fixed-elements-get-focus#29064810)
-    var ua = navigator.userAgent.toLowerCase();
-    if( ua.indexOf('safari') > -1 && ua.indexOf('mobile') > -1 ) {
-      scrollElement = document.body;
-      document.documentElement.className = document.documentElement.className + ' mobile-safari';
+    try{
+      pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
+    } catch(e) {
+      pageViews = 0;
     }
+
+    siteTimer = new Timer(0);
+    pageTimer = new Timer(0);
 
     // insert styles into DOM
     var styles = require('./styles.js');
@@ -224,6 +227,7 @@ Boxzilla.init = function() {
     document.body.appendChild(overlay);
 
     // event binds
+    scrollElement.addEventListener('touchstart', throttle(checkHeightCriteria), true );
     scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
     window.addEventListener('resize', throttle(recalculateHeights));
     window.addEventListener('load', recalculateHeights );

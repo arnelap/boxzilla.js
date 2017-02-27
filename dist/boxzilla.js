@@ -855,12 +855,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
             Animator.toggle(this.element, this.config.animation);
 
-            // focus on first input field in box
-            var firstInput = this.element.querySelector('input, textarea');
-            if (firstInput) {
-                firstInput.focus();
-            }
-
             return true;
         };
 
@@ -1097,8 +1091,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // check triggerHeight criteria for all boxes
         function checkHeightCriteria() {
+
             var scrollY = scrollElement.hasOwnProperty('scrollY') ? scrollElement.scrollY : scrollElement.scrollTop;
             scrollY = scrollY + window.innerHeight * 0.75;
+            console.log(scrollY);
 
             boxes.forEach(function (box) {
                 if (!box.mayAutoShow() || box.triggerHeight <= 0) {
@@ -1196,8 +1192,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         var timers = {
             start: function start() {
-                var sessionTime = sessionStorage.getItem('boxzilla_timer');
-                if (sessionTime) siteTimer.time = sessionTime;
+                try {
+                    var sessionTime = sessionStorage.getItem('boxzilla_timer');
+                    if (sessionTime) siteTimer.time = sessionTime;
+                } catch (e) {}
                 siteTimer.start();
                 pageTimer.start();
             },
@@ -1210,17 +1208,16 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // initialise & add event listeners
         Boxzilla.init = function () {
-            window.addEventListener('click', onElementClick, false);
-            siteTimer = new Timer(sessionStorage.getItem('boxzilla_timer') || 0);
-            pageTimer = new Timer(0);
-            pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
+            document.body.addEventListener('click', onElementClick, false);
 
-            // sniff user agent for mobile safari fix...(https://stackoverflow.com/questions/29001977/safari-in-ios8-is-scrolling-screen-when-fixed-elements-get-focus#29064810)
-            var ua = navigator.userAgent.toLowerCase();
-            if (ua.indexOf('safari') > -1 && ua.indexOf('mobile') > -1) {
-                scrollElement = document.body;
-                document.documentElement.className = document.documentElement.className + ' mobile-safari';
+            try {
+                pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
+            } catch (e) {
+                pageViews = 0;
             }
+
+            siteTimer = new Timer(0);
+            pageTimer = new Timer(0);
 
             // insert styles into DOM
             var styles = require('./styles.js');
@@ -1236,6 +1233,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             document.body.appendChild(overlay);
 
             // event binds
+            scrollElement.addEventListener('touchstart', throttle(checkHeightCriteria), true);
             scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true);
             window.addEventListener('resize', throttle(recalculateHeights));
             window.addEventListener('load', recalculateHeights);
@@ -1333,7 +1331,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             module.exports = Boxzilla;
         }
     }, { "./box.js": 3, "./styles.js": 5, "./timer.js": 6, "wolfy87-eventemitter": 1 }], 5: [function (require, module, exports) {
-        var styles = ".mobile-safari,.mobile-safari body{-webkit-overflow-scrolling:touch!important;overflow:auto!important;height:100%!important}#boxzilla-overlay{position:fixed;background:rgba(0,0,0,.65);width:100%;height:100%;left:0;top:0;z-index:99999}.boxzilla-center-container{position:fixed;top:0;left:0;right:0;height:0;text-align:center;z-index:999999;line-height:0}.boxzilla-center-container .boxzilla{display:inline-block;text-align:left;position:relative;line-height:normal}.boxzilla{position:fixed;z-index:999999;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;background:#fff;padding:25px}.boxzilla.boxzilla-top-left{top:0;left:0}.boxzilla.boxzilla-top-right{top:0;right:0}.boxzilla.boxzilla-bottom-left{bottom:0;left:0}.boxzilla.boxzilla-bottom-right{bottom:0;right:0}.boxzilla-content>:first-child{margin-top:0;padding-top:0}.boxzilla-content>:last-child{margin-bottom:0;padding-bottom:0}.boxzilla-close-icon{position:absolute;right:0;top:0;text-align:center;padding:6px;cursor:pointer;-webkit-appearance:none;font-size:28px;font-weight:700;line-height:20px;color:#000;opacity:.5}.boxzilla-close-icon:focus,.boxzilla-close-icon:hover{opacity:.8}";
+        var styles = "#boxzilla-overlay{position:fixed;background:rgba(0,0,0,.65);width:100%;height:100%;left:0;top:0;z-index:99999}.boxzilla-center-container{position:fixed;top:0;left:0;right:0;height:0;text-align:center;z-index:999999;line-height:0}.boxzilla-center-container .boxzilla{display:inline-block;text-align:left;position:relative;line-height:normal}.boxzilla{position:fixed;z-index:999999;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;background:#fff;padding:25px}.boxzilla.boxzilla-top-left{top:0;left:0}.boxzilla.boxzilla-top-right{top:0;right:0}.boxzilla.boxzilla-bottom-left{bottom:0;left:0}.boxzilla.boxzilla-bottom-right{bottom:0;right:0}.boxzilla-content>:first-child{margin-top:0;padding-top:0}.boxzilla-content>:last-child{margin-bottom:0;padding-bottom:0}.boxzilla-close-icon{position:absolute;right:0;top:0;text-align:center;padding:6px;cursor:pointer;-webkit-appearance:none;font-size:28px;font-weight:700;line-height:20px;color:#000;opacity:.5}.boxzilla-close-icon:focus,.boxzilla-close-icon:hover{opacity:.8}";
         module.exports = styles;
     }, {}], 6: [function (require, module, exports) {
         'use strict';
