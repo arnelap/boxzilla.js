@@ -1094,7 +1094,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
             var scrollY = scrollElement.hasOwnProperty('scrollY') ? scrollElement.scrollY : scrollElement.scrollTop;
             scrollY = scrollY + window.innerHeight * 0.75;
-            console.log(scrollY);
 
             boxes.forEach(function (box) {
                 if (!box.mayAutoShow() || box.triggerHeight <= 0) {
@@ -1184,8 +1183,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         function onElementClick(e) {
             var el = e.target || e.srcElement;
-            if (el && el.tagName === 'A' && el.getAttribute('href').indexOf('#boxzilla-') === 0) {
-                var boxId = e.target.getAttribute('href').substring("#boxzilla-".length);
+            if (el && el.tagName === 'A' && el.getAttribute('href').toLowerCase().indexOf('#boxzilla-') === 0) {
+                window.a = el;
+                var boxId = e.target.getAttribute('href').toLowerCase().substring("#boxzilla-".length);
                 Boxzilla.toggle(boxId);
             }
         }
