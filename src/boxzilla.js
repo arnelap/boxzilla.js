@@ -175,13 +175,24 @@ function onMouseEnter() {
     }
 }
 
+
+
 function onElementClick(e) {
-    var el = e.target || e.srcElement;
-    if( el && el.tagName === 'A' && el.getAttribute('href').toLowerCase().indexOf('#boxzilla-') === 0 ) {
-      window.a = el;
-        var boxId = e.target.getAttribute('href').toLowerCase().substring("#boxzilla-".length);
-        Boxzilla.toggle(boxId);
+  // find <a> element in up to 3 parent elements
+  var el = e.target || e.srcElement;
+  var depth = 3
+  for(var i=0; i<=depth; i++) {
+    if(!el || el.tagName === 'A') {
+      break;
     }
+
+    el = el.parentElement;
+  }
+
+  if( el && el.tagName === 'A' && el.getAttribute('href').toLowerCase().indexOf('#boxzilla-') === 0 ) {
+    var boxId = el.getAttribute('href').toLowerCase().substring("#boxzilla-".length);
+    Boxzilla.toggle(boxId);
+  }
 }
 
 var timers = {
@@ -201,7 +212,7 @@ var timers = {
 };
 
 // initialise & add event listeners
-Boxzilla.init = function(opts) {
+Boxzilla.init = function() {
     document.body.addEventListener('click', onElementClick, false);
 
     try{
