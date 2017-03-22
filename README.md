@@ -52,7 +52,10 @@ The following configuration values are accepted as the second argument for the `
         'dismissed': 24,        // hours that a box should stay hidden after being dismissed
         'triggered': 1          // hours that a box should stay hidden after being triggered
     },            // integer, number of days a box should be hidden when dismissed
-    'minimumScreenWidth': 0,    // integer, box won't show on screens smaller than this
+    'screenWidthCondition' => { // null or object
+      'condition' => 'larger',  // either "smaller" or "larger"
+      'value' => 450,           // integer, box will only show on screens larger or smaller than this, depending on condition
+    },
     'rehide': false,            // boolean, whether box should rehide when certain triggers are no longer met.
     'position': 'center',       // "center", "bottom-right", "top-left", etc.
     'testMode': false,          // boolean
@@ -70,7 +73,6 @@ Boxzilla.create( 'foo', {
         'method': 'time_on_site',
         'value': 120
     },
-    'minimumScreenWidth': 600,
     'icon': '<i class="fa fa-cross"></i>',
     'position': 'center',
 });

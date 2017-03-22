@@ -646,7 +646,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             'content': '',
             'cookie': null,
             'icon': '&times',
-            'minimumScreenWidth': 0,
+            'screenWidthCondition': null,
             'position': 'center',
             'testMode': false,
             'trigger': false,
@@ -903,11 +903,19 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         };
 
         Box.prototype.fits = function () {
-            if (this.config.minimumScreenWidth <= 0) {
+            if (!this.config.screenWidthCondition || !this.config.screenWidthCondition.value) {
                 return true;
             }
 
-            return window.innerWidth > this.config.minimumScreenWidth;
+            switch (this.config.screenWidthCondition.condition) {
+                case "larger":
+                    return window.innerWidth > this.config.screenWidthCondition.value;
+                case "smaller":
+                    return window.innerWidth < this.config.screenWidthCondition.value;
+            }
+
+            // meh.. condition should be "smaller" or "larger", just return true.
+            return true;
         };
 
         // is this box enabled?
@@ -1182,10 +1190,19 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         }
 
         function onElementClick(e) {
+            // find <a> element in up to 3 parent elements
             var el = e.target || e.srcElement;
+            var depth = 3;
+            for (var i = 0; i <= depth; i++) {
+                if (!el || el.tagName === 'A') {
+                    break;
+                }
+
+                el = el.parentElement;
+            }
+
             if (el && el.tagName === 'A' && el.getAttribute('href').toLowerCase().indexOf('#boxzilla-') === 0) {
-                window.a = el;
-                var boxId = e.target.getAttribute('href').toLowerCase().substring("#boxzilla-".length);
+                var boxId = el.getAttribute('href').toLowerCase().substring("#boxzilla-".length);
                 Boxzilla.toggle(boxId);
             }
         }
@@ -1207,7 +1224,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         };
 
         // initialise & add event listeners
-        Boxzilla.init = function (opts) {
+        Boxzilla.init = function () {
             document.body.addEventListener('click', onElementClick, false);
 
             try {
@@ -1264,6 +1281,15 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
          * @returns Box
          */
         Boxzilla.create = function (id, opts) {
+
+            // preserve backwards compat for minimumScreenWidth option
+            if (typeof opts.minimumScreenWidth !== "undefined") {
+                opts.screenWidthCondition = {
+                    condition: "larger",
+                    value: opts.minimumScreenWidth
+                };
+            }
+
             var box = new Box(id, opts);
             boxes.push(box);
             return box;

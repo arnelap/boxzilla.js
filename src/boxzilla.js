@@ -269,6 +269,15 @@ Boxzilla.init = function() {
  * @returns Box
  */
 Boxzilla.create = function(id, opts) {
+
+    // preserve backwards compat for minimumScreenWidth option
+    if( typeof(opts.minimumScreenWidth) !== "undefined") {
+      opts.screenWidthCondition = {
+        condition: "larger",
+        value: opts.minimumScreenWidth,
+      }
+    }
+
     var box = new Box(id, opts);
     boxes.push(box);
     return box;

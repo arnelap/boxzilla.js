@@ -6,7 +6,7 @@ var defaults = {
         'content': '',
         'cookie': null,
         'icon': '&times',
-        'minimumScreenWidth': 0,
+        'screenWidthCondition': null,
         'position': 'center',
         'testMode': false,
         'trigger': false,
@@ -261,11 +261,19 @@ Box.prototype.locationHashRefersBox = function() {
 };
 
 Box.prototype.fits = function() {
-    if( this.config.minimumScreenWidth <= 0 ) {
-        return true;
-    }
+  if( ! this.config.screenWidthCondition || ! this.config.screenWidthCondition.value ) {
+    return true;
+  }
 
-    return window.innerWidth > this.config.minimumScreenWidth
+  switch( this.config.screenWidthCondition.condition ) {
+    case "larger":
+      return window.innerWidth > this.config.screenWidthCondition.value;
+    case "smaller":
+      return window.innerWidth < this.config.screenWidthCondition.value;
+  }
+
+  // meh.. condition should be "smaller" or "larger", just return true.
+  return true;
 };
 
 // is this box enabled?
