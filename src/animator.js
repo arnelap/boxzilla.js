@@ -15,7 +15,7 @@ function initObjectProperties(properties, value) {
 }
 
 function copyObjectProperties(properties, object) {
-    var newObject = {}
+    var newObject = {};
     for(var i=0; i<properties.length; i++) {
         newObject[properties[i]] = object[properties[i]];
     }
@@ -38,7 +38,7 @@ function animated(element) {
  * @param element
  * @param animation Either "fade" or "slide"
  */
-function toggle(element, animation) {
+function toggle(element, animation, callbackFn) {
     var nowVisible = element.style.display != 'none' || element.offsetLeft > 0;
 
     // create clone for reference
@@ -47,6 +47,7 @@ function toggle(element, animation) {
         element.removeAttribute('data-animated');
         element.setAttribute('style', clone.getAttribute('style'));
         element.style.display = nowVisible ? 'none' : '';
+		if( callbackFn ) { callbackFn(); }
     };
 
     // store attribute so everyone knows we're animating this element

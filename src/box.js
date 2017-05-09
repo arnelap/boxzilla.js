@@ -60,6 +60,7 @@ var Box = function( id, config ) {
     this.triggerHeight = 0;
     this.cookieSet = false;
     this.element = null;
+	this.contentElement = null;
     this.closeIcon = null;
 
     // if a trigger was given, calculate values once and store
@@ -144,6 +145,7 @@ Box.prototype.dom = function() {
     }
 
     document.body.appendChild(wrapper);
+	this.contentElement = content;
     this.element = box;
 };
 
@@ -214,7 +216,10 @@ Box.prototype.toggle = function(show) {
         Animator.toggle(this.overlay, "fade");
     }
 
-    Animator.toggle(this.element, this.config.animation);
+    Animator.toggle(this.element, this.config.animation, function() {
+		if(this.visible) { return; }
+		this.contentElement.innerHTML = this.contentElement.innerHTML;
+	}.bind(this));
 
     return true;
 };
