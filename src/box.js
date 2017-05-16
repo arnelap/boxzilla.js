@@ -259,6 +259,13 @@ Box.prototype.locationHashRefersBox = function() {
     }
 
     var elementId = window.location.hash.substring(1);
+
+	// only attempt on strings looking like an ID or classname
+	var regex = /^[a-zA-Z\-\_0-9]{1,}$/;
+	if( regex.test(elementId) ) {
+		return false;
+	}
+
     if( elementId === this.element.id ) {
         return true;
     } else if( this.element.querySelector('#' + elementId) ) {
