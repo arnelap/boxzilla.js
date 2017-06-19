@@ -242,7 +242,6 @@ Boxzilla.init = function() {
     scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
     window.addEventListener('resize', throttle(recalculateHeights));
     window.addEventListener('load', recalculateHeights );
-	window.addEventListener('load', checkHeightCriteria);
     overlay.addEventListener('click', onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
     window.setTimeout(checkPageViewsCriteria, 1000 );
