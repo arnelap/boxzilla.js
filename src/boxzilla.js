@@ -87,7 +87,7 @@ function checkTimeCriteria() {
 function checkHeightCriteria() {
 
   var scrollY = scrollElement.hasOwnProperty('scrollY') ? scrollElement.scrollY : scrollElement.scrollTop;
-  scrollY = scrollY + window.innerHeight * 0.75;
+  scrollY = scrollY + window.innerHeight * 0.9;
 
   boxes.forEach(function(box) {
       if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
@@ -242,6 +242,7 @@ Boxzilla.init = function() {
     scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
     window.addEventListener('resize', throttle(recalculateHeights));
     window.addEventListener('load', recalculateHeights );
+	window.addEventListener('load', checkHeightCriteria);
     overlay.addEventListener('click', onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
     window.setTimeout(checkPageViewsCriteria, 1000 );
