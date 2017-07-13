@@ -555,6 +555,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 if (!nowVisible) {
                     var computedStyles = window.getComputedStyle(element);
                     visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles);
+                    if (!isFinite(visibleStyles.height)) {
+                        var clientRect = element.getBoundingClientRect();
+                        visibleStyles.heigth = clientRect.height;
+                    }
                     css(element, hiddenStyles);
                 }
 
@@ -1121,7 +1125,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         function checkHeightCriteria() {
 
             var scrollY = scrollElement.hasOwnProperty('scrollY') ? scrollElement.scrollY : scrollElement.scrollTop;
-            scrollY = scrollY + window.innerHeight * 0.75;
+            scrollY = scrollY + window.innerHeight * 0.9;
 
             boxes.forEach(function (box) {
                 if (!box.mayAutoShow() || box.triggerHeight <= 0) {
