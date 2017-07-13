@@ -555,9 +555,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 if (!nowVisible) {
                     var computedStyles = window.getComputedStyle(element);
                     visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles);
+
+                    // in some browsers, getComputedStyle returns "auto" value. this falls back to getBoundingClientRect() in those browsers since we need an actual height.
                     if (!isFinite(visibleStyles.height)) {
                         var clientRect = element.getBoundingClientRect();
-                        visibleStyles.heigth = clientRect.height;
+                        visibleStyles.height = clientRect.height;
                     }
                     css(element, hiddenStyles);
                 }
