@@ -299,7 +299,7 @@ Boxzilla.dismiss = function(id) {
     // if no id given, dismiss all current open boxes
     if( typeof(id) === "undefined" ) {
         boxes.forEach(function(box) { box.dismiss(); });
-    } else if( typeof( boxes[id] ) === "object" ) {
+    } else {
         Boxzilla.get(id).dismiss();
     }
 };
