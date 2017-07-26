@@ -1339,7 +1339,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 boxes.forEach(function (box) {
                     box.dismiss();
                 });
-            } else if (_typeof(boxes[id]) === "object") {
+            } else {
                 Boxzilla.get(id).dismiss();
             }
         };
