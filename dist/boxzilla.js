@@ -1227,7 +1227,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 el = el.parentElement;
             }
 
-            if (el && el.tagName === 'A' && el.getAttribute('href').toLowerCase().indexOf('#boxzilla-') === 0) {
+            if (!el || el.tagName !== 'A' || !el.getAttribute('href')) {
+                return;
+            }
+
+            if (el.getAttribute('href').toLowerCase().indexOf('#boxzilla-') === 0) {
                 var boxId = el.getAttribute('href').toLowerCase().substring("#boxzilla-".length);
                 Boxzilla.toggle(boxId);
             }
