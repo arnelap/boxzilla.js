@@ -1126,7 +1126,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         // check triggerHeight criteria for all boxes
         function checkHeightCriteria() {
 
-            var scrollY = scrollElement.hasOwnProperty('scrollY') ? scrollElement.scrollY : scrollElement.scrollTop;
+            var scrollY = scrollElement.hasOwnProperty('pageYOffset') ? scrollElement.pageYOffset : scrollElement.scrollTop;
             scrollY = scrollY + window.innerHeight * 0.9;
 
             boxes.forEach(function (box) {
