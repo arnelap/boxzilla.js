@@ -111,7 +111,7 @@ function checkHeightCriteria() {
 // recalculate heights and variables based on height
 function recalculateHeights() {
     boxes.forEach(function(box) {
-        box.setCustomBoxStyling();
+        box.onResize();
     });
 }
 

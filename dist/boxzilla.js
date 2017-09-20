@@ -665,12 +665,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             Animator = require('./animator.js');
 
         /**
-         * Merge 2 objects, values of the latter overwriting the former.
-         *
-         * @param obj1
-         * @param obj2
-         * @returns {*}
-         */
+        * Merge 2 objects, values of the latter overwriting the former.
+        *
+        * @param obj1
+        * @param obj2
+        * @returns {*}
+        */
         function merge(obj1, obj2) {
             var obj3 = {};
             for (var attrname in obj1) {
@@ -683,9 +683,9 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         }
 
         /**
-         * Get the real height of entire document.
-         * @returns {number}
-         */
+        * Get the real height of entire document.
+        * @returns {number}
+        */
         function getDocumentHeight() {
             var body = document.body,
                 html = document.documentElement;
@@ -709,20 +709,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             this.visible = false;
             this.dismissed = false;
             this.triggered = false;
-            this.triggerHeight = 0;
-            this.cookieSet = false;
+            this.triggerHeight = this.calculateTriggerHeight();
+            this.cookieSet = this.isCookieSet();
             this.element = null;
             this.contentElement = null;
             this.closeIcon = null;
-
-            // if a trigger was given, calculate values once and store
-            if (this.config.trigger) {
-                if (this.config.trigger.method === 'percentage' || this.config.trigger.method === 'element') {
-                    this.triggerHeight = this.calculateTriggerHeight();
-                }
-
-                this.cookieSet = this.isCookieSet();
-            }
 
             // create dom elements for this box
             this.dom();
@@ -891,14 +882,16 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         Box.prototype.calculateTriggerHeight = function () {
             var triggerHeight = 0;
 
-            if (this.config.trigger.method === 'element') {
-                var triggerElement = document.body.querySelector(this.config.trigger.value);
-                if (triggerElement) {
-                    var offset = triggerElement.getBoundingClientRect();
-                    triggerHeight = offset.top;
+            if (this.config.trigger) {
+                if (this.config.trigger.method === 'element') {
+                    var triggerElement = document.body.querySelector(this.config.trigger.value);
+                    if (triggerElement) {
+                        var offset = triggerElement.getBoundingClientRect();
+                        triggerHeight = offset.top;
+                    }
+                } else if (this.config.trigger.method === 'percentage') {
+                    triggerHeight = this.config.trigger.value / 100 * getDocumentHeight();
                 }
-            } else if (this.config.trigger.method === 'percentage') {
-                triggerHeight = this.config.trigger.value / 100 * getDocumentHeight();
             }
 
             return triggerHeight;
@@ -944,6 +937,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             return true;
         };
 
+        Box.prototype.onResize = function () {
+            this.triggerHeight = this.calculateTriggerHeight();
+            this.setCustomBoxStyling();
+        };
+
         // is this box enabled?
         Box.prototype.mayAutoShow = function () {
 
@@ -970,8 +968,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         };
 
         Box.prototype.isCookieSet = function () {
-            // always show on test mode
-            if (this.config.testMode) {
+            // always show on test mode or when no auto-trigger is configured
+            if (this.config.testMode || !this.config.trigger) {
                 return false;
             }
 
@@ -1004,11 +1002,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         };
 
         /**
-         * Dismisses the box and optionally sets a cookie.
-         *
-         * @param e The event that triggered this dismissal.
-         * @returns {boolean}
-         */
+        * Dismisses the box and optionally sets a cookie.
+        *
+        * @param e The event that triggered this dismissal.
+        * @returns {boolean}
+        */
         Box.prototype.dismiss = function (e) {
             // prevent default action
             e && e.preventDefault();
@@ -1151,7 +1149,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         // recalculate heights and variables based on height
         function recalculateHeights() {
             boxes.forEach(function (box) {
-                box.setCustomBoxStyling();
+                box.onResize();
             });
         }
 
