@@ -89,12 +89,6 @@ function getDocumentHeight() {
       box.setCookie();
       Boxzilla.trigger('box.interactions.form', [ box, e.target ]);
     }, false);
-
-    // maybe show box right away
-    if( this.fits() && this.locationHashRefersBox() ) {
-      window.setTimeout(this.show.bind(this), 1);
-    }
-
   };
 
   // generate dom elements for this box
@@ -245,7 +239,7 @@ function getDocumentHeight() {
       return false;
     }
 
-    if( elementId === this.element.id ) {
+    if( elementId === "boxzilla-" + this.element.id ) {
       return true;
     } else if( this.element.querySelector('#' + elementId) ) {
       return true;
