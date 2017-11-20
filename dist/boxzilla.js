@@ -744,7 +744,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
             // maybe show box right away
             if (this.fits() && this.locationHashRefersBox()) {
-                window.addEventListener('load', this.show.bind(this));
+                window.setTimeout(this.show.bind(this), 1);
             }
         };
 
