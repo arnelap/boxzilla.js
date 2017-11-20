@@ -741,11 +741,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 box.setCookie();
                 Boxzilla.trigger('box.interactions.form', [box, e.target]);
             }, false);
-
-            // maybe show box right away
-            if (this.fits() && this.locationHashRefersBox()) {
-                window.setTimeout(this.show.bind(this), 1);
-            }
         };
 
         // generate dom elements for this box
@@ -881,30 +876,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             }
 
             return triggerHeight;
-        };
-
-        // checks whether window.location.hash equals the box element ID or that of any element inside the box
-        Box.prototype.locationHashRefersBox = function () {
-
-            if (!window.location.hash || 0 === window.location.hash.length) {
-                return false;
-            }
-
-            var elementId = window.location.hash.substring(1);
-
-            // only attempt on strings looking like an ID or classname
-            var regex = /^[a-zA-Z\-\_0-9]{1,}$/;
-            if (regex.test(elementId)) {
-                return false;
-            }
-
-            if (elementId === this.element.id) {
-                return true;
-            } else if (this.element.querySelector('#' + elementId)) {
-                return true;
-            }
-
-            return false;
         };
 
         Box.prototype.fits = function () {

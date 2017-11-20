@@ -224,30 +224,6 @@ function getDocumentHeight() {
     return triggerHeight;
   };
 
-  // checks whether window.location.hash equals the box element ID or that of any element inside the box
-  Box.prototype.locationHashRefersBox = function() {
-
-    if( ! window.location.hash || 0 === window.location.hash.length ) {
-      return false;
-    }
-
-    var elementId = window.location.hash.substring(1);
-
-    // only attempt on strings looking like an ID or classname
-    var regex = /^[a-zA-Z\-\_0-9]{1,}$/;
-    if( regex.test(elementId) ) {
-      return false;
-    }
-
-    if( elementId === "boxzilla-" + this.element.id ) {
-      return true;
-    } else if( this.element.querySelector('#' + elementId) ) {
-      return true;
-    }
-
-    return false;
-  };
-
   Box.prototype.fits = function() {
     if( ! this.config.screenWidthCondition || ! this.config.screenWidthCondition.value ) {
       return true;
