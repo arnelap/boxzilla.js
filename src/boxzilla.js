@@ -217,7 +217,7 @@ var timers = {
 
 // initialise & add event listeners
 Boxzilla.init = function() {
-    document.body.addEventListener('click', onElementClick, false);
+    document.body.addEventListener('click', onElementClick, true);
 
     try{
       pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;

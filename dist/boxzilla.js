@@ -1210,7 +1210,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         // initialise & add event listeners
         Boxzilla.init = function () {
-            document.body.addEventListener('click', onElementClick, false);
+            document.body.addEventListener('click', onElementClick, true);
 
             try {
                 pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
