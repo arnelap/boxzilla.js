@@ -754,9 +754,17 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             box.style.display = 'none';
             wrapper.appendChild(box);
 
-            var content = document.createElement('div');
+            var content;
+            if (typeof this.config.content === "string") {
+                content = document.createElement('div');
+                content.innerHTML = this.config.content;
+            } else {
+                content = this.config.content;
+
+                // make sure element is visible
+                content.style.display = '';
+            }
             content.className = 'boxzilla-content';
-            content.innerHTML = this.config.content;
             box.appendChild(content);
 
             if (this.config.closable && this.config.icon) {
