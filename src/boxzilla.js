@@ -102,7 +102,10 @@ function checkHeightCriteria() {
 
           // trigger box
           box.trigger();
-      } else if( box.mayRehide() ) {
+      } 
+    
+      // if box may auto-hide and scrollY is less than triggerHeight (with small margin of error), hide box
+      if( box.mayRehide() && scrollY < ( box.triggerHeight - 5 ) ) {
           box.hide();
       }
   });
