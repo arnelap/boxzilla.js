@@ -35,7 +35,7 @@ function throttle(fn, threshhold, scope) {
 
 // "keyup" listener
 function onKeyUp(e) {
-    if (e.keyCode == 27) {
+    if (e.keyCode === 27) {
         Boxzilla.dismiss();
     }
 }
@@ -153,7 +153,7 @@ function onMouseLeave(e) {
     var delay = 400;
 
     // did mouse leave at top of window?
-    if( e.clientY <= 0 ) {
+    if( e.clientY <= 0 && e.clientX < ( 0.9 * window.innerWidth)) {
         exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
     }
 }
