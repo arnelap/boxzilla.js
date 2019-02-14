@@ -1059,18 +1059,24 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
   4: [function (require, module, exports) {
     'use strict';
 
-    var EventEmitter = require('wolfy87-eventemitter'),
-        Boxzilla = Object.create(EventEmitter.prototype),
-        Box = require('./box.js')(Boxzilla),
-        Timer = require('./timer.js'),
-        boxes = [],
-        overlay,
-        scrollElement = window,
-        exitIntentDelayTimer,
-        exitIntentTriggered,
-        siteTimer,
-        pageTimer,
-        pageViews;
+    var EventEmitter = require('wolfy87-eventemitter');
+
+    var Timer = require('./timer.js');
+
+    var Boxzilla = Object.create(EventEmitter.prototype);
+
+    var Box = require('./box.js')(Boxzilla);
+
+    var boxes = [];
+    var overlay;
+    var scrollElement = window;
+    var siteTimer;
+    var pageTimer;
+    var pageViews;
+
+    var styles = require('./styles.js');
+
+    var ExitIntent = require('./triggers/exit-intent.js');
 
     function throttle(fn, threshhold, scope) {
       threshhold || (threshhold = 250);
@@ -1096,7 +1102,7 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
 
 
     function onKeyUp(e) {
-      if (e.keyCode == 27) {
+      if (e.keyCode === 27) {
         Boxzilla.dismiss();
       }
     } // check "pageviews" criteria for each box
@@ -1190,9 +1196,9 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       });
     }
 
-    function triggerExitIntent() {
+    function showBoxesWithExitIntentTrigger() {
       // do nothing if already triggered OR another box is visible.
-      if (exitIntentTriggered || isAnyBoxVisible()) {
+      if (isAnyBoxVisible()) {
         return;
       }
 
@@ -1201,34 +1207,12 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
           box.trigger();
         }
       });
-      exitIntentTriggered = true;
-    }
-
-    function onMouseLeave(e) {
-      var delay = 400; // did mouse leave at top of window?
-
-      if (e.clientY <= 0) {
-        exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
-      }
     }
 
     function isAnyBoxVisible() {
-      for (var i = 0; i < boxes.length; i++) {
-        var box = boxes[i];
-
-        if (box.visible) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-    function onMouseEnter() {
-      if (exitIntentDelayTimer) {
-        window.clearInterval(exitIntentDelayTimer);
-        exitIntentDelayTimer = null;
-      }
+      return boxes.filter(function (b) {
+        return b.visible;
+      }).length > 0;
     }
 
     function onElementClick(e) {
@@ -1283,8 +1267,6 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       siteTimer = new Timer(0);
       pageTimer = new Timer(0); // insert styles into DOM
 
-      var styles = require('./styles.js');
-
       var styleElement = document.createElement('style');
       styleElement.setAttribute("type", "text/css");
       styleElement.innerHTML = styles;
@@ -1293,8 +1275,9 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       overlay = document.createElement('div');
       overlay.style.display = 'none';
       overlay.id = 'boxzilla-overlay';
-      document.body.appendChild(overlay); // event binds
+      document.body.appendChild(overlay); // init exit intent trigger
 
+      new ExitIntent(showBoxesWithExitIntentTrigger);
       scrollElement.addEventListener('touchstart', throttle(checkHeightCriteria), true);
       scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true);
       window.addEventListener('resize', throttle(recalculateHeights));
@@ -1302,8 +1285,6 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       overlay.addEventListener('click', onOverlayClick);
       window.setInterval(checkTimeCriteria, 1000);
       window.setTimeout(checkPageViewsCriteria, 1000);
-      document.documentElement.addEventListener('mouseleave', onMouseLeave);
-      document.documentElement.addEventListener('mouseenter', onMouseEnter);
       document.addEventListener('keyup', onKeyUp);
       timers.start();
       window.addEventListener('focus', timers.start);
@@ -1404,6 +1385,7 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
     "./box.js": 3,
     "./styles.js": 5,
     "./timer.js": 6,
+    "./triggers/exit-intent.js": 7,
     "wolfy87-eventemitter": 1
   }],
   5: [function (require, module, exports) {
@@ -1436,5 +1418,66 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
     };
 
     module.exports = Timer;
+  }, {}],
+  7: [function (require, module, exports) {
+    'use strict';
+
+    module.exports = function (callback) {
+      var timeout;
+      var touchStart = {};
+      var delay = 400;
+
+      function triggerCallback() {
+        document.documentElement.removeEventListener('mouseleave', onMouseLeave);
+        document.documentElement.removeEventListener('mouseenter', onMouseEnter);
+        window.removeEventListener('touchstart', onTouchStart);
+        window.removeEventListener('touchend', onTouchEnd);
+        callback();
+      }
+
+      function onMouseLeave(evt) {
+        // did mouse leave at top of window?
+        if (evt.clientY <= 0 && evt.clientX < 0.9 * window.innerWidth) {
+          timeout = window.setTimeout(triggerCallback, delay);
+        }
+      }
+
+      function onMouseEnter(evt) {
+        if (timeout) {
+          window.clearTimeout(timeout);
+          timeout = null;
+        }
+      }
+
+      function onTouchStart(evt) {
+        if (timeout) {
+          window.clearTimeout(timeout);
+          timeout = null;
+        }
+
+        touchStart = {
+          timestamp: performance.now(),
+          scrollY: window.scrollY
+        };
+      }
+
+      function onTouchEnd(evt) {
+        // allow a tiny tiny margin for error, to not fire on clicks
+        if (window.scrollY + 20 >= touchStart.scrollY) {
+          return;
+        }
+
+        if (performance.now() - touchStart.timestamp > 150) {
+          return;
+        }
+
+        timeout = window.setTimeout(triggerCallback, delay);
+      }
+
+      window.addEventListener('touchstart', onTouchStart);
+      window.addEventListener('touchend', onTouchEnd);
+      document.documentElement.addEventListener('mouseleave', onMouseLeave);
+      document.documentElement.addEventListener('mouseenter', onMouseEnter);
+    };
   }, {}]
 }, {}, [4]);
