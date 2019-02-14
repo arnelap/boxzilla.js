@@ -20,7 +20,7 @@ gulp.task('js-styles', function() {
         .pipe(gulp.dest('./src'));
 });
 
-gulp.task('default', ['js-styles'], function () {
+gulp.task('default', gulp.series('js-styles', function () {
     return browserify({
             entries: 'src/boxzilla.js'
         }).on('error', gutil.log)
@@ -28,18 +28,18 @@ gulp.task('default', ['js-styles'], function () {
         .pipe(source('boxzilla.js'))
         .pipe(buffer())
         .pipe(babel({
-            presets: ['es2015']
+            presets: ['@babel/env']
         }))
         .pipe(gulp.dest('./dist/'))
         .pipe(sourcemaps.init({loadMaps: true}))
-        // Add transformation tasks to the pipeline here.
+
         .pipe(uglify())
         .on('error', gutil.log)
         .pipe(rename({extname: '.min.js'}))
         .pipe(sourcemaps.write('./'))
         .pipe(gulp.dest('./dist/'));
-});
+}));
 
-gulp.task('watch', ['default'], function() {
+gulp.task('watch', gulp.series('default', function() {
   gulp.watch(['src/*.js', 'src/*.css'], ['default']);
-});
+}));
