@@ -10,6 +10,7 @@ let scrollElement = window;
 let siteTimer;
 let pageTimer;
 let pageViews;
+let initialised = false;
 
 const styles = require('./styles.js');
 const ExitIntent = require('./triggers/exit-intent.js');
@@ -197,6 +198,10 @@ const timers = {
 
 // initialise & add event listeners
 Boxzilla.init = function() {
+    if (initialised) {
+        return;
+    }
+
     document.body.addEventListener('click', onElementClick, true);
 
     try{
@@ -241,6 +246,7 @@ Boxzilla.init = function() {
     window.addEventListener('blur', timers.stop);
 
     Boxzilla.trigger('ready');
+    initialised = true; // ensure this function doesn't run again
 };
 
 /**
