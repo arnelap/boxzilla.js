@@ -1,14 +1,18 @@
 'use strict';
 
-var EventEmitter = require('wolfy87-eventemitter'),
-    Boxzilla = Object.create(EventEmitter.prototype),
-    Box = require('./box.js')(Boxzilla),
-    Timer = require('./timer.js'),
-    boxes = [],
-    overlay,
-    scrollElement = window,
-    exitIntentDelayTimer, exitIntentTriggered,
-    siteTimer, pageTimer, pageViews;
+const EventEmitter = require('wolfy87-eventemitter');
+const Timer = require('./timer.js');
+const Boxzilla = Object.create(EventEmitter.prototype);
+const Box = require('./box.js')(Boxzilla);
+let boxes = [];
+let overlay;
+let scrollElement = window;
+let siteTimer;
+let pageTimer;
+let pageViews;
+
+const styles = require('./styles.js');
+const ExitIntent = require('./triggers/exit-intent.js');
 
 function throttle(fn, threshhold, scope) {
     threshhold || (threshhold = 250);
@@ -134,9 +138,9 @@ function onOverlayClick(e) {
     });
 }
 
-function triggerExitIntent() {
+function showBoxesWithExitIntentTrigger() {
     // do nothing if already triggered OR another box is visible.
-    if(exitIntentTriggered || isAnyBoxVisible() ) {
+    if (isAnyBoxVisible() ) {
         return;
     }
 
@@ -146,38 +150,11 @@ function triggerExitIntent() {
         }
     });
 
-    exitIntentTriggered = true;
-}
-
-function onMouseLeave(e) {
-    var delay = 400;
-
-    // did mouse leave at top of window?
-    if( e.clientY <= 0 && e.clientX < ( 0.9 * window.innerWidth)) {
-        exitIntentDelayTimer = window.setTimeout(triggerExitIntent, delay);
-    }
 }
 
 function isAnyBoxVisible() {
-
-    for( var i=0; i<boxes.length; i++ ) {
-        var box = boxes[i];
-
-        if( box.visible ) {
-            return true;
-        }
-    }
-
-    return false;
+    return boxes.filter(b => b.visible).length > 0
 }
-
-function onMouseEnter() {
-    if( exitIntentDelayTimer ) {
-        window.clearInterval(exitIntentDelayTimer);
-        exitIntentDelayTimer = null;
-    }
-}
-
 
 
 function onElementClick(e) {
@@ -202,7 +179,7 @@ function onElementClick(e) {
   }
 }
 
-var timers = {
+const timers = {
     start: function() {
         try{
           var sessionTime = sessionStorage.getItem('boxzilla_timer');
@@ -232,7 +209,6 @@ Boxzilla.init = function() {
     pageTimer = new Timer(0);
 
     // insert styles into DOM
-    var styles = require('./styles.js');
     var styleElement = document.createElement('style');
     styleElement.setAttribute("type", "text/css");
     styleElement.innerHTML = styles;
@@ -244,7 +220,9 @@ Boxzilla.init = function() {
     overlay.id = 'boxzilla-overlay';
     document.body.appendChild(overlay);
 
-    // event binds
+    // init exit intent trigger
+    new ExitIntent(showBoxesWithExitIntentTrigger)
+
     scrollElement.addEventListener('touchstart', throttle(checkHeightCriteria), true );
     scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
     window.addEventListener('resize', throttle(recalculateHeights));
@@ -252,8 +230,6 @@ Boxzilla.init = function() {
     overlay.addEventListener('click', onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
     window.setTimeout(checkPageViewsCriteria, 1000 );
-    document.documentElement.addEventListener('mouseleave', onMouseLeave);
-    document.documentElement.addEventListener('mouseenter', onMouseEnter);
     document.addEventListener('keyup', onKeyUp);
 
     timers.start();
