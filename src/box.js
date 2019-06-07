@@ -76,7 +76,11 @@ function getDocumentHeight() {
 
     // attach event to "close" icon inside box
     if(this.closeIcon) {
-      this.closeIcon.addEventListener('click', this.dismiss.bind(this));
+      this.closeIcon.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        box.dismiss();
+      });
     }
 
     this.element.addEventListener('click', function(e) {
@@ -157,13 +161,10 @@ function getDocumentHeight() {
     this.element.style.display = origDisplay;
   };
 
-  // toggle visibility of the box
-  Box.prototype.toggle = function(show) {
-
-    // revert visibility if no explicit argument is given
-    if( typeof( show ) === "undefined" ) {
-      show = ! this.visible;
-    }
+// toggle visibility of the box
+Box.prototype.toggle = function(show, animate) {
+  show = typeof(show) === "undefined" ? !this.visible : show;
+  animate = typeof(animate) === "undefined" ? true : animate;
 
     // is box already at desired visibility?
     if( show === this.visible ) {
@@ -192,25 +193,36 @@ function getDocumentHeight() {
     // show or hide box using selected animation
     if( this.config.position === 'center' ) {
       this.overlay.classList.toggle('boxzilla-' + this.id + '-overlay');
-      Animator.toggle(this.overlay, "fade");
+
+      if (animate) {
+        Animator.toggle(this.overlay, "fade");
+      } else {
+        this.overlay.style.display = show ? '' : 'none';
+      }
     }
 
-    Animator.toggle(this.element, this.config.animation, function() {
-      if(this.visible) { return; }
+  if (animate) {
+    Animator.toggle(this.element, this.config.animation, function () {
+      if (this.visible) {
+        return;
+      }
       this.contentElement.innerHTML = this.contentElement.innerHTML;
     }.bind(this));
+  } else {
+    this.element.style.display = show ? '' : 'none';
+  }
 
     return true;
   };
 
   // show the box
-  Box.prototype.show = function() {
-    return this.toggle(true);
+  Box.prototype.show = function(animate) {
+    return this.toggle(true, animate);
   };
 
   // hide the box
-  Box.prototype.hide = function() {
-    return this.toggle(false);
+  Box.prototype.hide = function(animate) {
+    return this.toggle(false, animate);
   };
 
   // calculate trigger height
@@ -318,17 +330,14 @@ function getDocumentHeight() {
   * @param e The event that triggered this dismissal.
   * @returns {boolean}
   */
-  Box.prototype.dismiss = function(e) {
-    // prevent default action
-    e && e.preventDefault();
-
+  Box.prototype.dismiss = function(animate) {
     // only dismiss box if it's currently open.
     if( ! this.visible ) {
       return false;
     }
 
     // hide box element
-    this.hide();
+    this.hide(animate);
 
     // set cookie
     if(this.config.cookie && this.config.cookie.dismissed) {
