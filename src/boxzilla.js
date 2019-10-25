@@ -1,9 +1,8 @@
 'use strict';
 
-const EventEmitter = require('wolfy87-eventemitter');
 const Timer = require('./timer.js');
-const Boxzilla = Object.create(EventEmitter.prototype);
-const Box = require('./box.js')(Boxzilla);
+const Boxzilla = require('./events.js');
+const Box = require('./box.js');
 let boxes = [];
 let overlay;
 let scrollElement = window;
@@ -270,7 +269,7 @@ Boxzilla.create = function(id, opts) {
       }
     }
 
-    var box = new Box(id, opts);
+    const box = new Box(id, opts);
     boxes.push(box);
     return box;
 };

@@ -1,22 +1,28 @@
-var duration = 320;
+'use strict';
+
+const duration = 320;
 
 function css(element, styles) {
-    for(var property in styles) {
+    for(let property in styles) {
+        if (!styles.hasOwnProperty(property)) {
+            continue;
+        }
+
         element.style[property] = styles[property];
     }
 }
 
 function initObjectProperties(properties, value) {
-    var newObject = {};
-    for(var i=0; i<properties.length; i++) {
+    const newObject = {};
+    for(let i=0; i<properties.length; i++) {
         newObject[properties[i]] = value;
     }
     return newObject;
 }
 
 function copyObjectProperties(properties, object) {
-    var newObject = {};
-    for(var i=0; i<properties.length; i++) {
+    const newObject = {};
+    for(let i=0; i<properties.length; i++) {
         newObject[properties[i]] = object[properties[i]];
     }
     return newObject;
@@ -37,13 +43,14 @@ function animated(element) {
  *
  * @param element
  * @param animation Either "fade" or "slide"
+ * @param callbackFn
  */
 function toggle(element, animation, callbackFn) {
-    var nowVisible = element.style.display != 'none' || element.offsetLeft > 0;
+    const nowVisible = element.style.display !== 'none' || element.offsetLeft > 0;
 
     // create clone for reference
-    var clone = element.cloneNode(true);
-    var cleanup = function() {
+    const clone = element.cloneNode(true);
+    const cleanup = function() {
         element.removeAttribute('data-animated');
         element.setAttribute('style', clone.getAttribute('style'));
         element.style.display = nowVisible ? 'none' : '';
@@ -58,22 +65,24 @@ function toggle(element, animation, callbackFn) {
         element.style.display = '';
     }
 
-    var hiddenStyles, visibleStyles;
+    let hiddenStyles;
+    let visibleStyles;
 
     // animate properties
-    if( animation === 'slide' ) {
+    if ( animation === 'slide' ) {
         hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
         visibleStyles = {};
 
         if( ! nowVisible ) {
-            var computedStyles = window.getComputedStyle(element);
+            const computedStyles = window.getComputedStyle(element);
             visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles);
 
             // in some browsers, getComputedStyle returns "auto" value. this falls back to getBoundingClientRect() in those browsers since we need an actual height.
             if(!isFinite(visibleStyles.height)) {
-              var clientRect = element.getBoundingClientRect();
+              const clientRect = element.getBoundingClientRect();
               visibleStyles.height = clientRect.height;
             }
+
             css(element, hiddenStyles);
         }
 
@@ -92,21 +101,25 @@ function toggle(element, animation, callbackFn) {
 }
 
 function animate(element, targetStyles, fn) {
-    var last = +new Date();
-    var initialStyles = window.getComputedStyle(element);
-    var currentStyles = {};
-    var propSteps = {};
+    let last = +new Date();
+    let initialStyles = window.getComputedStyle(element);
+    let currentStyles = {};
+    let propSteps = {};
 
-    for(var property in targetStyles) {
+    for (let property in targetStyles) {
+        if (!targetStyles.hasOwnProperty(property)) {
+            continue;
+        }
+
         // make sure we have an object filled with floats
         targetStyles[property] = parseFloat(targetStyles[property]);
 
         // calculate step size & current value
-        var to = targetStyles[property];
-        var current = parseFloat(initialStyles[property]);
+        const to = targetStyles[property];
+        const current = parseFloat(initialStyles[property]);
 
         // is there something to do?
-        if( current == to ) {
+        if ( current == to ) {
             delete targetStyles[property];
             continue;
         }
@@ -115,13 +128,17 @@ function animate(element, targetStyles, fn) {
         currentStyles[property] = current;
     }
 
-    var tick = function() {
-        var now = +new Date();
-        var timeSinceLastTick = now - last;
-        var done = true;
+    const tick = function() {
+        const now = +new Date();
+        const timeSinceLastTick = now - last;
+        let done = true;
 
-        var step, to, increment, newValue;
-        for(var property in targetStyles ) {
+        let step, to, increment, newValue;
+        for(let property in targetStyles ) {
+            if (!targetStyles.hasOwnProperty(property)) {
+                continue;
+            }
+
             step = propSteps[property];
             to = targetStyles[property];
             increment =  step * timeSinceLastTick;
@@ -136,7 +153,7 @@ function animate(element, targetStyles, fn) {
             // store new value
             currentStyles[property] = newValue;
 
-            var suffix = property !== "opacity" ? "px" : "";
+            const suffix = property !== "opacity" ? "px" : "";
             element.style[property] = newValue + suffix;
         }
 
@@ -153,7 +170,6 @@ function animate(element, targetStyles, fn) {
 
     tick();
 }
-
 
 module.exports = {
     'toggle': toggle,

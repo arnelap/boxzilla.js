@@ -1,6 +1,6 @@
 'use strict';
 
-var defaults = {
+const defaults = {
   'animation': 'fade',
   'rehide': false,
   'content': '',
@@ -11,9 +11,9 @@ var defaults = {
   'testMode': false,
   'trigger': false,
   'closable': true
-},
-Boxzilla,
-Animator = require('./animator.js');
+};
+const events = require('./events.js');
+const Animator = require('./animator.js');
 
 /**
 * Merge 2 objects, values of the latter overwriting the former.
@@ -23,9 +23,21 @@ Animator = require('./animator.js');
 * @returns {*}
 */
 function merge( obj1, obj2 ) {
-  var obj3 = {};
-  for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
-  for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
+  let obj3 = {};
+
+  // add obj1 to obj3
+  for (let attrname in obj1) {
+    if (obj1.hasOwnProperty(attrname)) {
+      obj3[attrname] = obj1[attrname];
+    }
+  }
+
+  // add obj2 to obj3
+  for (let attrname in obj2) {
+    if (obj2.hasOwnProperty(attrname)) {
+      obj3[attrname] = obj2[attrname];
+    }
+  }
   return obj3;
 }
 
@@ -34,17 +46,14 @@ function merge( obj1, obj2 ) {
 * @returns {number}
 */
 function getDocumentHeight() {
-  var body = document.body,
-  html = document.documentElement;
+  const body = document.body;
+  const html = document.documentElement;
 
-  var height = Math.max( body.scrollHeight, body.offsetHeight,
-    html.clientHeight, html.scrollHeight, html.offsetHeight );
-
-    return height;
-  }
+  return Math.max( body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight );
+ }
 
   // Box Object
-  var Box = function( id, config ) {
+ function Box( id, config ) {
     this.id 		= id;
 
     // store config values
@@ -72,41 +81,41 @@ function getDocumentHeight() {
 
   // initialise the box
   Box.prototype.events = function() {
-    var box = this;
+    const box = this;
 
     // attach event to "close" icon inside box
     if(this.closeIcon) {
-      this.closeIcon.addEventListener('click', function(e) {
-        e.preventDefault();
+      this.closeIcon.addEventListener('click', function(evt) {
+        evt.preventDefault();
 
         box.dismiss();
       });
     }
 
-    this.element.addEventListener('click', function(e) {
-      if( e.target.tagName === 'A' ) {
-        Boxzilla.trigger('box.interactions.link', [ box, e.target ] );
+    this.element.addEventListener('click', function(evt) {
+      if( evt.target.tagName === 'A' ) {
+        events.trigger('box.interactions.link', [ box, evt.target ] );
       }
     }, false);
 
-    this.element.addEventListener('submit', function(e) {
+    this.element.addEventListener('submit', function(evt) {
       box.setCookie();
-      Boxzilla.trigger('box.interactions.form', [ box, e.target ]);
+      events.trigger('box.interactions.form', [ box, evt.target ]);
     }, false);
   };
 
   // generate dom elements for this box
   Box.prototype.dom = function() {
-    var wrapper = document.createElement('div');
+    const wrapper = document.createElement('div');
     wrapper.className = 'boxzilla-container boxzilla-' + this.config.position + '-container';
 
-    var box = document.createElement('div');
+    const box = document.createElement('div');
     box.setAttribute('id', 'boxzilla-' + this.id);
     box.className = 'boxzilla boxzilla-' + this.id + ' boxzilla-' + this.config.position;
     box.style.display = 'none';
     wrapper.appendChild(box);
 
-    var content;
+    let content;
     if(typeof(this.config.content) === "string" ) {
       content = document.createElement('div');
       content.innerHTML = this.config.content;
@@ -120,7 +129,7 @@ function getDocumentHeight() {
     box.appendChild(content);
 
     if( this.config.closable && this.config.icon ) {
-      var closeIcon = document.createElement('span');
+      const closeIcon = document.createElement('span');
       closeIcon.className = "boxzilla-close-icon";
       closeIcon.innerHTML = this.config.icon;
       box.appendChild(closeIcon);
@@ -136,14 +145,14 @@ function getDocumentHeight() {
   Box.prototype.setCustomBoxStyling = function() {
 
     // reset element to its initial state
-    var origDisplay = this.element.style.display;
+    const origDisplay = this.element.style.display;
     this.element.style.display = '';
     this.element.style.overflowY = 'auto';
     this.element.style.maxHeight = 'none';
 
     // get new dimensions
-    var windowHeight = window.innerHeight;
-    var boxHeight = this.element.clientHeight;
+    const windowHeight = window.innerHeight;
+    const boxHeight = this.element.clientHeight;
 
     // add scrollbar to box and limit height
     if( boxHeight > windowHeight ) {
@@ -153,7 +162,7 @@ function getDocumentHeight() {
 
     // set new top margin for boxes which are centered
     if( this.config.position === 'center' ) {
-      var newTopMargin = ( ( windowHeight - boxHeight ) / 2 );
+      let newTopMargin = ( ( windowHeight - boxHeight ) / 2 );
       newTopMargin = newTopMargin >= 0 ? newTopMargin : 0;
       this.element.style.marginTop = newTopMargin + "px";
     }
@@ -188,7 +197,7 @@ Box.prototype.toggle = function(show, animate) {
     this.setCustomBoxStyling();
 
     // trigger event
-    Boxzilla.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
+    events.trigger('box.' + ( show ? 'show' : 'hide' ), [ this ] );
 
     // show or hide box using selected animation
     if( this.config.position === 'center' ) {
@@ -227,13 +236,14 @@ Box.prototype.toggle = function(show, animate) {
 
   // calculate trigger height
   Box.prototype.calculateTriggerHeight = function() {
-    var triggerHeight = 0;
+    let triggerHeight = 0;
 
     if( this.config.trigger ) {
       if( this.config.trigger.method === 'element' ) {
-        var triggerElement = document.body.querySelector(this.config.trigger.value);
+        let triggerElement = document.body.querySelector(this.config.trigger.value);
+
         if( triggerElement ) {
-          var offset = triggerElement.getBoundingClientRect();
+          const offset = triggerElement.getBoundingClientRect();
           triggerHeight = offset.top;
         }
       } else if( this.config.trigger.method === 'percentage' ) {
@@ -301,19 +311,19 @@ Box.prototype.toggle = function(show, animate) {
       return false;
     }
 
-    var cookieSet = document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'boxzilla_box_' + this.id + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1") === "true";
+    const cookieSet = document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'boxzilla_box_' + this.id + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1") === "true";
     return cookieSet;
   };
 
   // set cookie that disables automatically showing the box
   Box.prototype.setCookie = function(hours) {
-    var expiryDate = new Date();
+    const expiryDate = new Date();
     expiryDate.setHours( expiryDate.getHours() + hours);
     document.cookie = 'boxzilla_box_'+ this.id + '=true; expires='+ expiryDate.toUTCString() +'; path=/';
   };
 
   Box.prototype.trigger = function() {
-    var shown = this.show();
+    const shown = this.show();
     if( ! shown ) {
       return;
     }
@@ -326,8 +336,7 @@ Box.prototype.toggle = function(show, animate) {
 
   /**
   * Dismisses the box and optionally sets a cookie.
-  *
-  * @param e The event that triggered this dismissal.
+  * @param animate
   * @returns {boolean}
   */
   Box.prototype.dismiss = function(animate) {
@@ -345,11 +354,8 @@ Box.prototype.toggle = function(show, animate) {
     }
 
     this.dismissed = true;
-    Boxzilla.trigger('box.dismiss', [ this ]);
+    events.trigger('box.dismiss', [ this ]);
     return true;
   };
 
-  module.exports = function(_Boxzilla) {
-    Boxzilla = _Boxzilla;
-    return Box;
-  };
+  module.exports = Box;
