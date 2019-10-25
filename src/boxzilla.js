@@ -286,37 +286,38 @@ Boxzilla.get = function(id) {
     throw new Error("No box exists with ID " + id);
 }
 
+
 // dismiss a single box (or all by omitting id param)
-Boxzilla.dismiss = function(id) {
+Boxzilla.dismiss = function(id, animate) {
     // if no id given, dismiss all current open boxes
-    if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.dismiss(); });
+    if(id) {
+        Boxzilla.get(id).dismiss(animate);
     } else {
-        Boxzilla.get(id).dismiss();
+        boxes.forEach(function(box) { box.dismiss(animate); });
     }
 };
 
-Boxzilla.hide = function(id) {
-    if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.hide(); });
+Boxzilla.hide = function(id, animate) {
+    if(id) {
+        Boxzilla.get(id).hide(animate);
     } else {
-        Boxzilla.get(id).hide();
+        boxes.forEach(function(box) { box.hide(animate); });
     }
 };
 
-Boxzilla.show = function(id) {
-    if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.show(); });
+Boxzilla.show = function(id, animate) {
+    if(id) {
+        Boxzilla.get(id).show(animate);
     } else {
-        Boxzilla.get(id).show();
+        boxes.forEach(function(box) { box.show(animate); });
     }
 };
 
-Boxzilla.toggle = function(id) {
-    if( typeof(id) === "undefined" ) {
-        boxes.forEach(function(box) { box.toggle(); });
+Boxzilla.toggle = function(id, animate) {
+    if(id) {
+        Boxzilla.get(id).toggle(animate);
     } else {
-        Boxzilla.get(id).toggle();
+        boxes.forEach(function(box) { box.toggle(animate); });
     }
 };
 
