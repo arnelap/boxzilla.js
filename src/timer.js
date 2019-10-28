@@ -1,6 +1,6 @@
 'use strict';
 
-var Timer = function(start) {
+const Timer = function(start) {
     this.time = start;
     this.interval = 0;
 };

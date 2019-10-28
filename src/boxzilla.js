@@ -216,7 +216,7 @@ Boxzilla.init = function() {
     pageTimer = new Timer(0);
 
     // insert styles into DOM
-    var styleElement = document.createElement('style');
+    const styleElement = document.createElement('style');
     styleElement.setAttribute("type", "text/css");
     styleElement.innerHTML = styles;
     document.head.appendChild(styleElement);
@@ -228,7 +228,10 @@ Boxzilla.init = function() {
     document.body.appendChild(overlay);
 
     // init exit intent trigger
-    new ExitIntent(showBoxesWithExitIntentTrigger)
+    new ExitIntent(showBoxesWithExitIntentTrigger);
+
+    // start timers
+    timers.start();
 
     scrollElement.addEventListener('touchstart', throttle(checkHeightCriteria), true );
     scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
@@ -239,13 +242,14 @@ Boxzilla.init = function() {
     window.setTimeout(checkPageViewsCriteria, 1000 );
     document.addEventListener('keyup', onKeyUp);
 
-    timers.start();
-    window.addEventListener('focus', timers.start);
+    // stop timers when leaving page or switching to other tab
+    document.addEventListener("visibilitychange", function() {
+        document.hidden ? timers.stop() : timers.start();
+    });
     window.addEventListener('beforeunload', function() {
         timers.stop();
         sessionStorage.setItem('boxzilla_pageviews', ++pageViews);
     });
-    window.addEventListener('blur', timers.stop);
 
     Boxzilla.trigger('ready');
     initialised = true; // ensure this function doesn't run again
