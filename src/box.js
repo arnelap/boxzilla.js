@@ -59,9 +59,12 @@ function getDocumentHeight() {
     // store config values
     this.config = merge(defaults, config);
 
-    // store ref to overlay
-    this.overlay = document.getElementById('boxzilla-overlay');
-
+    // add overlay element to dom and store ref to overlay
+    this.overlay = document.createElement('div');
+    this.overlay.style.display = 'none';
+    this.overlay.id = 'boxzilla-overlay-' + this.id;
+    this.overlay.classList.add('boxzilla-overlay')
+    document.body.appendChild( this.overlay );
     // state
     this.visible 	= false;
     this.dismissed 	= false;
@@ -102,6 +105,20 @@ function getDocumentHeight() {
       box.setCookie();
       events.trigger('box.interactions.form', [ box, evt.target ]);
     }, false);
+
+    this.overlay.addEventListener('click', function(e){
+      var x = e.offsetX;
+      var y = e.offsetY;
+
+      // calculate if click was less than 40px outside box to avoid closing it by accident
+      var rect = box.element.getBoundingClientRect();
+      var margin = 40;
+
+      // if click was not anywhere near box, dismiss it.
+      if( x < ( rect.left - margin ) || x > ( rect.right + margin ) || y < ( rect.top - margin ) || y > ( rect.bottom + margin ) ) {
+        box.dismiss();
+      }
+    });
   };
 
   // generate dom elements for this box
