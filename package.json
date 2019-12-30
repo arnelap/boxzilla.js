@@ -7,6 +7,9 @@
     "type": "git",
     "url": "https://github.com/ibericode/boxzilla.js"
   },
+  "files": [
+    "src/**"
+  ],
   "keywords": [
     "jquery",
     "pop-up",
