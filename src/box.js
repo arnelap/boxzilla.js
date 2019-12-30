@@ -147,8 +147,8 @@ function getDocumentHeight() {
     // reset element to its initial state
     const origDisplay = this.element.style.display;
     this.element.style.display = '';
-    this.element.style.overflowY = 'auto';
-    this.element.style.maxHeight = 'none';
+    this.element.style.overflowY = '';
+    this.element.style.maxHeight = '';
 
     // get new dimensions
     const windowHeight = window.innerHeight;
