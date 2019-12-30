@@ -4,7 +4,6 @@ const Timer = require('./timer.js');
 const Boxzilla = require('./events.js');
 const Box = require('./box.js');
 let boxes = [];
-let overlay;
 let scrollElement = window;
 let siteTimer;
 let pageTimer;
@@ -122,22 +121,6 @@ function recalculateHeights() {
     });
 }
 
-function onOverlayClick(e) {
-    var x = e.offsetX;
-    var y = e.offsetY;
-
-    // calculate if click was less than 40px outside box to avoid closing it by accident
-    boxes.forEach(function(box) {
-        var rect = box.element.getBoundingClientRect();
-        var margin = 40;
-
-        // if click was not anywhere near box, dismiss it.
-        if( x < ( rect.left - margin ) || x > ( rect.right + margin ) || y < ( rect.top - margin ) || y > ( rect.bottom + margin ) ) {
-            box.dismiss();
-        }
-    });
-}
-
 function showBoxesWithExitIntentTrigger() {
     // do nothing if already triggered OR another box is visible.
     if (isAnyBoxVisible() ) {
@@ -221,12 +204,6 @@ Boxzilla.init = function() {
     styleElement.innerHTML = styles;
     document.head.appendChild(styleElement);
 
-    // add overlay element to dom
-    overlay = document.createElement('div');
-    overlay.style.display = 'none';
-    overlay.id = 'boxzilla-overlay';
-    document.body.appendChild(overlay);
-
     // init exit intent trigger
     new ExitIntent(showBoxesWithExitIntentTrigger);
 
@@ -237,7 +214,6 @@ Boxzilla.init = function() {
     scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
     window.addEventListener('resize', throttle(recalculateHeights));
     window.addEventListener('load', recalculateHeights );
-    overlay.addEventListener('click', onOverlayClick);
     window.setInterval(checkTimeCriteria, 1000);
     window.setTimeout(checkPageViewsCriteria, 1000 );
     document.addEventListener('keyup', onKeyUp);

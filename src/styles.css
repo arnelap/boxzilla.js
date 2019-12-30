@@ -1,6 +1,6 @@
 
 
-#boxzilla-overlay {
+#boxzilla-overlay,.boxzilla-overlay {
     position: fixed;
     background: rgba(0, 0, 0, 0.65 );
     width: 100%;
