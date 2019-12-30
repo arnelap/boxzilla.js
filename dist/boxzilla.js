@@ -871,8 +871,8 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       // reset element to its initial state
       var origDisplay = this.element.style.display;
       this.element.style.display = '';
-      this.element.style.overflowY = 'auto';
-      this.element.style.maxHeight = 'none'; // get new dimensions
+      this.element.style.overflowY = '';
+      this.element.style.maxHeight = ''; // get new dimensions
 
       var windowHeight = window.innerHeight;
       var boxHeight = this.element.clientHeight; // add scrollbar to box and limit height
