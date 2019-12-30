@@ -789,9 +789,13 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
     function Box(id, config) {
       this.id = id; // store config values
 
-      this.config = merge(defaults, config); // store ref to overlay
+      this.config = merge(defaults, config); // add overlay element to dom and store ref to overlay
 
-      this.overlay = document.getElementById('boxzilla-overlay'); // state
+      this.overlay = document.createElement('div');
+      this.overlay.style.display = 'none';
+      this.overlay.id = 'boxzilla-overlay-' + this.id;
+      this.overlay.classList.add('boxzilla-overlay');
+      document.body.appendChild(this.overlay); // state
 
       this.visible = false;
       this.dismissed = false;
@@ -828,6 +832,17 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
         box.setCookie();
         events.trigger('box.interactions.form', [box, evt.target]);
       }, false);
+      this.overlay.addEventListener('click', function (e) {
+        var x = e.offsetX;
+        var y = e.offsetY; // calculate if click was less than 40px outside box to avoid closing it by accident
+
+        var rect = box.element.getBoundingClientRect();
+        var margin = 40; // if click was not anywhere near box, dismiss it.
+
+        if (x < rect.left - margin || x > rect.right + margin || y < rect.top - margin || y > rect.bottom + margin) {
+          box.dismiss();
+        }
+      });
     }; // generate dom elements for this box
 
 
@@ -1094,7 +1109,6 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
     var Box = require('./box.js');
 
     var boxes = [];
-    var overlay;
     var scrollElement = window;
     var siteTimer;
     var pageTimer;
@@ -1209,20 +1223,6 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       });
     }
 
-    function onOverlayClick(e) {
-      var x = e.offsetX;
-      var y = e.offsetY; // calculate if click was less than 40px outside box to avoid closing it by accident
-
-      boxes.forEach(function (box) {
-        var rect = box.element.getBoundingClientRect();
-        var margin = 40; // if click was not anywhere near box, dismiss it.
-
-        if (x < rect.left - margin || x > rect.right + margin || y < rect.top - margin || y > rect.bottom + margin) {
-          box.dismiss();
-        }
-      });
-    }
-
     function showBoxesWithExitIntentTrigger() {
       // do nothing if already triggered OR another box is visible.
       if (isAnyBoxVisible()) {
@@ -1304,12 +1304,7 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       var styleElement = document.createElement('style');
       styleElement.setAttribute("type", "text/css");
       styleElement.innerHTML = styles;
-      document.head.appendChild(styleElement); // add overlay element to dom
-
-      overlay = document.createElement('div');
-      overlay.style.display = 'none';
-      overlay.id = 'boxzilla-overlay';
-      document.body.appendChild(overlay); // init exit intent trigger
+      document.head.appendChild(styleElement); // init exit intent trigger
 
       new ExitIntent(showBoxesWithExitIntentTrigger); // start timers
 
@@ -1318,7 +1313,6 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
       scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true);
       window.addEventListener('resize', throttle(recalculateHeights));
       window.addEventListener('load', recalculateHeights);
-      overlay.addEventListener('click', onOverlayClick);
       window.setInterval(checkTimeCriteria, 1000);
       window.setTimeout(checkPageViewsCriteria, 1000);
       document.addEventListener('keyup', onKeyUp); // stop timers when leaving page or switching to other tab
@@ -1436,7 +1430,7 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
     "wolfy87-eventemitter": 1
   }],
   6: [function (require, module, exports) {
-    var styles = "#boxzilla-overlay{position:fixed;background:rgba(0,0,0,.65);width:100%;height:100%;left:0;top:0;z-index:10000}.boxzilla-center-container{position:fixed;top:0;left:0;right:0;height:0;text-align:center;z-index:11000;line-height:0}.boxzilla-center-container .boxzilla{display:inline-block;text-align:left;position:relative;line-height:normal}.boxzilla{position:fixed;z-index:12000;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;background:#fff;padding:25px}.boxzilla.boxzilla-top-left{top:0;left:0}.boxzilla.boxzilla-top-right{top:0;right:0}.boxzilla.boxzilla-bottom-left{bottom:0;left:0}.boxzilla.boxzilla-bottom-right{bottom:0;right:0}.boxzilla-content>:first-child{margin-top:0;padding-top:0}.boxzilla-content>:last-child{margin-bottom:0;padding-bottom:0}.boxzilla-close-icon{position:absolute;right:0;top:0;text-align:center;padding:6px;cursor:pointer;-webkit-appearance:none;font-size:28px;font-weight:700;line-height:20px;color:#000;opacity:.5}.boxzilla-close-icon:focus,.boxzilla-close-icon:hover{opacity:.8}";
+    var styles = "#boxzilla-overlay,.boxzilla-overlay{position:fixed;background:rgba(0,0,0,.65);width:100%;height:100%;left:0;top:0;z-index:10000}.boxzilla-center-container{position:fixed;top:0;left:0;right:0;height:0;text-align:center;z-index:11000;line-height:0}.boxzilla-center-container .boxzilla{display:inline-block;text-align:left;position:relative;line-height:normal}.boxzilla{position:fixed;z-index:12000;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;background:#fff;padding:25px}.boxzilla.boxzilla-top-left{top:0;left:0}.boxzilla.boxzilla-top-right{top:0;right:0}.boxzilla.boxzilla-bottom-left{bottom:0;left:0}.boxzilla.boxzilla-bottom-right{bottom:0;right:0}.boxzilla-content>:first-child{margin-top:0;padding-top:0}.boxzilla-content>:last-child{margin-bottom:0;padding-bottom:0}.boxzilla-close-icon{position:absolute;right:0;top:0;text-align:center;padding:6px;cursor:pointer;-webkit-appearance:none;font-size:28px;font-weight:700;line-height:20px;color:#000;opacity:.5}.boxzilla-close-icon:focus,.boxzilla-close-icon:hover{opacity:.8}";
     module.exports = styles;
   }, {}],
   7: [function (require, module, exports) {
