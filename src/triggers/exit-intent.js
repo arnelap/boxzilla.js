@@ -1,16 +1,20 @@
-'use strict';
-
-module.exports = function(callback) {
+module.exports = function(boxes) {
     let timeout = null;
     let touchStart = {};
 
-    function triggerCallback() {
+    function trigger() {
         document.documentElement.removeEventListener('mouseleave', onMouseLeave);
         document.documentElement.removeEventListener('mouseenter', onMouseEnter);
         document.documentElement.removeEventListener('click', clearTimeout);
         window.removeEventListener('touchstart', onTouchStart);
         window.removeEventListener('touchend', onTouchEnd);
-        callback();
+
+        // show boxes with exit intent trigger
+        boxes.forEach((box) => {
+            if(box.mayAutoShow() && box.config.trigger.method === 'exit_intent' ) {
+                box.trigger();
+            }
+        });
     }
 
     function clearTimeout() {
@@ -40,7 +44,7 @@ module.exports = function(callback) {
         // did mouse leave at top of window?
         // add small exception space in the top-right corner
         if( evt.clientY <= getAddressBarY() && evt.clientX < ( 0.80 * window.innerWidth)) {
-            timeout = window.setTimeout(triggerCallback, 400);
+            timeout = window.setTimeout(trigger, 400);
         }
     }
 
@@ -74,7 +78,7 @@ module.exports = function(callback) {
             return;
         }
 
-        timeout = window.setTimeout(triggerCallback, 800);
+        timeout = window.setTimeout(trigger, 800);
     }
 
     window.addEventListener('touchstart', onTouchStart);

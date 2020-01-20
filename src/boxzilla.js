@@ -1,40 +1,16 @@
 'use strict';
 
-const Timer = require('./timer.js');
 const Boxzilla = require('./events.js');
 const Box = require('./box.js');
-let boxes = [];
-let scrollElement = window;
-let siteTimer;
-let pageTimer;
-let pageViews;
-let initialised = false;
-
+const util = require('./util.js');
 const styles = require('./styles.js');
 const ExitIntent = require('./triggers/exit-intent.js');
+const Scroll = require('./triggers/scroll.js');
+const Pageviews = require('./triggers/pageviews.js');
+const Time = require('./triggers/time.js');
 
-function throttle(fn, threshhold, scope) {
-    threshhold || (threshhold = 250);
-    var last,
-        deferTimer;
-    return function () {
-        var context = scope || this;
-
-        var now = +new Date,
-            args = arguments;
-        if (last && now < last + threshhold) {
-            // hold on to it
-            clearTimeout(deferTimer);
-            deferTimer = setTimeout(function () {
-                last = now;
-                fn.apply(context, args);
-            }, threshhold);
-        } else {
-            last = now;
-            fn.apply(context, args);
-        }
-    };
-}
+let initialised = false;
+let boxes = [];
 
 // "keyup" listener
 function onKeyUp(e) {
@@ -43,106 +19,14 @@ function onKeyUp(e) {
     }
 }
 
-// check "pageviews" criteria for each box
-function checkPageViewsCriteria() {
-
-    // don't bother if another box is currently open
-    if( isAnyBoxVisible() ) {
-        return;
-    }
-
-    boxes.forEach(function(box) {
-        if( ! box.mayAutoShow() ) {
-            return;
-        }
-
-        if( box.config.trigger.method === 'pageviews' && pageViews >= box.config.trigger.value ) {
-            box.trigger();
-        }
-    });
-}
-
-// check time trigger criteria for each box
-function checkTimeCriteria() {
-    // don't bother if another box is currently open
-    if( isAnyBoxVisible() ) {
-        return;
-    }
-
-    boxes.forEach(function(box) {
-        if( ! box.mayAutoShow() ) {
-            return;
-        }
-
-        // check "time on site" trigger
-        if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value) {
-            box.trigger();
-        }
-
-        // check "time on page" trigger
-        if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value) {
-            box.trigger();
-        }
-    });
-}
-
-// check triggerHeight criteria for all boxes
-function checkHeightCriteria() {
-
-  var scrollY = scrollElement.hasOwnProperty('pageYOffset') ? scrollElement.pageYOffset : scrollElement.scrollTop;
-  scrollY = scrollY + window.innerHeight * 0.9;
-
-  boxes.forEach(function(box) {
-      if( ! box.mayAutoShow() || box.triggerHeight <= 0 ) {
-          return;
-      }
-
-      if( scrollY > box.triggerHeight ) {
-          // don't bother if another box is currently open
-          if( isAnyBoxVisible() ) {
-              return;
-          }
-
-          // trigger box
-          box.trigger();
-      } 
-    
-      // if box may auto-hide and scrollY is less than triggerHeight (with small margin of error), hide box
-      if( box.mayRehide() && scrollY < ( box.triggerHeight - 5 ) ) {
-          box.hide();
-      }
-  });
-}
-
 // recalculate heights and variables based on height
 function recalculateHeights() {
-    boxes.forEach(function(box) {
-        box.onResize();
-    });
+    boxes.forEach(box => box.onResize());
 }
 
-function showBoxesWithExitIntentTrigger() {
-    // do nothing if already triggered OR another box is visible.
-    if (isAnyBoxVisible() ) {
-        return;
-    }
-
-    boxes.forEach(function(box) {
-        if(box.mayAutoShow() && box.config.trigger.method === 'exit_intent' ) {
-            box.trigger();
-        }
-    });
-
-}
-
-function isAnyBoxVisible() {
-    return boxes.filter(b => b.visible).length > 0
-}
-
-
-function onElementClick(e) {
+function onElementClick(evt) {
   // find <a> element in up to 3 parent elements
-  var el = e.target || e.srcElement;
+  var el = evt.target || evt.srcElement;
   var depth = 3
   for(var i=0; i<=depth; i++) {
     if(!el || el.tagName === 'A') {
@@ -152,11 +36,11 @@ function onElementClick(e) {
     el = el.parentElement;
   }
 
-  if( ! el || el.tagName !== 'A' || ! el.getAttribute('href') ) {
+  if( ! el || el.tagName !== 'A' || ! el.href ) {
     return;
   }
 
-  const href = el.getAttribute('href').toLowerCase();
+  const href = el.href.toLowerCase();
   const match = href.match(/[#&]boxzilla-(\d+)/);
 
   if( match && match.length > 1) {
@@ -165,38 +49,11 @@ function onElementClick(e) {
   }
 }
 
-const timers = {
-    start: function() {
-        try{
-          var sessionTime = sessionStorage.getItem('boxzilla_timer');
-          if( sessionTime ) siteTimer.time = sessionTime;
-        } catch(e) {}
-        siteTimer.start();
-        pageTimer.start();
-    },
-    stop: function() {
-        sessionStorage.setItem('boxzilla_timer', siteTimer.time);
-        siteTimer.stop();
-        pageTimer.stop();
-    }
-};
-
 // initialise & add event listeners
 Boxzilla.init = function() {
     if (initialised) {
         return;
     }
-
-    document.body.addEventListener('click', onElementClick, true);
-
-    try{
-      pageViews = sessionStorage.getItem('boxzilla_pageviews') || 0;
-    } catch(e) {
-      pageViews = 0;
-    }
-
-    siteTimer = new Timer(0);
-    pageTimer = new Timer(0);
 
     // insert styles into DOM
     const styleElement = document.createElement('style');
@@ -204,29 +61,17 @@ Boxzilla.init = function() {
     styleElement.innerHTML = styles;
     document.head.appendChild(styleElement);
 
-    // init exit intent trigger
-    new ExitIntent(showBoxesWithExitIntentTrigger);
+    // init exit intent triggershow
+    new ExitIntent(boxes);
+    new Pageviews(boxes);
+    new Scroll(boxes);
+    new Time(boxes);
 
-    // start timers
-    timers.start();
-
-    scrollElement.addEventListener('touchstart', throttle(checkHeightCriteria), true );
-    scrollElement.addEventListener('scroll', throttle(checkHeightCriteria), true );
-    window.addEventListener('resize', throttle(recalculateHeights));
+    document.body.addEventListener('click', onElementClick, true);
+    window.addEventListener('resize', util.throttle(recalculateHeights));
     window.addEventListener('load', recalculateHeights );
-    window.setInterval(checkTimeCriteria, 1000);
-    window.setTimeout(checkPageViewsCriteria, 1000 );
     document.addEventListener('keyup', onKeyUp);
-
-    // stop timers when leaving page or switching to other tab
-    document.addEventListener("visibilitychange", function() {
-        document.hidden ? timers.stop() : timers.start();
-    });
-    window.addEventListener('beforeunload', function() {
-        timers.stop();
-        sessionStorage.setItem('boxzilla_pageviews', ++pageViews);
-    });
-
+   
     Boxzilla.trigger('ready');
     initialised = true; // ensure this function doesn't run again
 };
@@ -240,9 +85,8 @@ Boxzilla.init = function() {
  * @returns Box
  */
 Boxzilla.create = function(id, opts) {
-
     // preserve backwards compat for minimumScreenWidth option
-    if( typeof(opts.minimumScreenWidth) !== "undefined") {
+    if (typeof(opts.minimumScreenWidth) !== "undefined") {
       opts.screenWidthCondition = {
         condition: "larger",
         value: opts.minimumScreenWidth,
@@ -255,10 +99,9 @@ Boxzilla.create = function(id, opts) {
 };
 
 Boxzilla.get = function(id) {
-    for( var i=0; i<boxes.length; i++) {
-        var box = boxes[i];
-        if( box.id == id ) {
-            return box;
+    for (var i=0; i<boxes.length; i++) {
+        if (boxes[i].id == id) {
+            return boxes[i];
         }
     }
 
@@ -269,34 +112,34 @@ Boxzilla.get = function(id) {
 // dismiss a single box (or all by omitting id param)
 Boxzilla.dismiss = function(id, animate) {
     // if no id given, dismiss all current open boxes
-    if(id) {
+    if (id) {
         Boxzilla.get(id).dismiss(animate);
     } else {
-        boxes.forEach(function(box) { box.dismiss(animate); });
+        boxes.forEach(box => box.dismiss(animate))
     }
 };
 
 Boxzilla.hide = function(id, animate) {
-    if(id) {
+    if (id) {
         Boxzilla.get(id).hide(animate);
     } else {
-        boxes.forEach(function(box) { box.hide(animate); });
+        boxes.forEach(box => box.hide(animate))
     }
 };
 
 Boxzilla.show = function(id, animate) {
-    if(id) {
+    if (id) {
         Boxzilla.get(id).show(animate);
     } else {
-        boxes.forEach(function(box) { box.show(animate); });
+        boxes.forEach(box => box.show(animate))
     }
 };
 
 Boxzilla.toggle = function(id, animate) {
-    if(id) {
+    if (id) {
         Boxzilla.get(id).toggle(animate);
     } else {
-        boxes.forEach(function(box) { box.toggle(animate); });
+        boxes.forEach(box => box.toggle(animate))
     }
 };
 
@@ -306,6 +149,6 @@ Boxzilla.boxes = boxes;
 // expose boxzilla object
 window.Boxzilla = Boxzilla;
 
-if ( typeof module !== 'undefined' && module.exports ) {
+if (typeof module !== 'undefined' && module.exports) {
     module.exports = Boxzilla;
 }

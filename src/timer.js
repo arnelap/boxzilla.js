@@ -1,5 +1,3 @@
-'use strict';
-
 const Timer = function(start) {
     this.time = start;
     this.interval = 0;
