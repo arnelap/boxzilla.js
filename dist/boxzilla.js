@@ -587,8 +587,6 @@
     "./animator.js": 1
   }],
   3: [function (require, module, exports) {
-    'use strict';
-
     var Box = require('./box.js');
 
     var throttle = require('./util.js').throttle;
@@ -605,14 +603,13 @@
 
     var initialised = false;
     var boxes = [];
-    var listeners = {}; // "keyup" listener
+    var listeners = {};
 
     function onKeyUp(evt) {
-      if (evt.keyCode === 27) {
+      if (evt.key === 'Escape' || evt.key === 'Esc') {
         dismiss();
       }
-    } // recalculate heights and variables based on height
-
+    }
 
     function recalculateHeights() {
       boxes.forEach(function (box) {
@@ -621,7 +618,8 @@
     }
 
     function onElementClick(evt) {
-      var el = evt.target; // bubble up to <a> element
+      // bubble up to <a> element
+      var el = evt.target;
 
       for (var i = 0; i <= 3; i++) {
         if (!el || el.tagName === 'A') {
@@ -684,21 +682,24 @@
 
     function create(id, opts) {
       // preserve backwards compat for minimumScreenWidth option
-      if (typeof opts.minimumScreenWidth !== "undefined") {
+      if (typeof opts.minimumScreenWidth !== 'undefined') {
         opts.screenWidthCondition = {
-          condition: "larger",
+          condition: 'larger',
           value: opts.minimumScreenWidth
         };
       }
 
+      id = String(id);
       var box = new Box(id, opts, trigger);
       boxes.push(box);
       return box;
     }
 
     function get(id) {
+      id = String(id);
+
       for (var i = 0; i < boxes.length; i++) {
-        if (String(boxes[i].id) === String(id)) {
+        if (boxes[i].id === id) {
           return boxes[i];
         }
       }
@@ -708,7 +709,6 @@
 
 
     function dismiss(id, animate) {
-      // if no id given, dismiss all current open boxes
       if (id) {
         get(id).dismiss(animate);
       } else {

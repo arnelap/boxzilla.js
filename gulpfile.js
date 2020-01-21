@@ -22,13 +22,14 @@ gulp.task('js-styles', function() {
 
 gulp.task('default', gulp.series('js-styles', function () {
     return browserify({
-            entries: 'src/boxzilla.js'
+            entries: 'src/boxzilla.js',
         }).on('error', gutil.log)
         .bundle()
         .pipe(source('boxzilla.js'))
         .pipe(buffer())
         .pipe(babel({
-            presets: ['@babel/env']
+            presets: ['@babel/env'],
+            sourceType: 'module',
         }))
         .pipe(gulp.dest('./dist/'))
         .pipe(sourcemaps.init({loadMaps: true}))

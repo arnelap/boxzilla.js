@@ -1,5 +1,3 @@
-'use strict';
-
 const Box = require('./box.js');
 const throttle = require('./util.js').throttle;
 const styles = require('./styles.js');
@@ -12,22 +10,19 @@ let initialised = false;
 let boxes = [];
 let listeners = {};
 
-// "keyup" listener
 function onKeyUp(evt) {
-    if (evt.keyCode === 27) {
+    if (evt.key === 'Escape' || evt.key === 'Esc') {
         dismiss();
     }
 }
 
-// recalculate heights and variables based on height
 function recalculateHeights() {
     boxes.forEach(box => box.onResize());
 }
 
 function onElementClick(evt) {
-  let el = evt.target;
-
   // bubble up to <a> element
+  let el = evt.target;
   for (let i=0; i <= 3; i++) {
     if (!el || el.tagName === 'A') {
       break;
@@ -87,21 +82,23 @@ function init() {
 
 function create(id, opts) {
     // preserve backwards compat for minimumScreenWidth option
-    if (typeof(opts.minimumScreenWidth) !== "undefined") {
+    if (typeof(opts.minimumScreenWidth) !== 'undefined') {
       opts.screenWidthCondition = {
-        condition: "larger",
+        condition: 'larger',
         value: opts.minimumScreenWidth,
       }
     }
 
+    id = String(id);
     const box = new Box(id, opts, trigger);
     boxes.push(box);
     return box;
 }
 
 function get(id) {
+    id = String(id);
     for (let i=0; i<boxes.length; i++) {
-        if (String(boxes[i].id) === String(id)) {
+        if (boxes[i].id === id) {
             return boxes[i];
         }
     }
@@ -112,7 +109,6 @@ function get(id) {
 
 // dismiss a single box (or all by omitting id param)
 function dismiss(id, animate) {
-    // if no id given, dismiss all current open boxes
     if (id) {
         get(id).dismiss(animate);
     } else {

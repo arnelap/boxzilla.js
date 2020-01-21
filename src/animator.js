@@ -139,7 +139,7 @@ function animate(element, targetStyles, fn) {
 
             step = propSteps[property];
             to = targetStyles[property];
-            increment =  step * timeSinceLastTick;
+            increment = step * timeSinceLastTick;
             newValue = currentStyles[property] + increment;
 
             if ((step > 0 && newValue >= to) || (step < 0 && newValue <= to)) {
