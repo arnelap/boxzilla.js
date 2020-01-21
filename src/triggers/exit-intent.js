@@ -10,7 +10,7 @@ module.exports = function(boxes) {
         window.removeEventListener('touchend', onTouchEnd);
 
         // show boxes with exit intent trigger
-        boxes.forEach((box) => {
+        boxes.forEach(box => {
             if(box.mayAutoShow() && box.config.trigger.method === 'exit_intent' ) {
                 box.trigger();
             }
@@ -26,7 +26,7 @@ module.exports = function(boxes) {
         timeout = null;
     }
 
-    function onMouseEnter(evt) {
+    function onMouseEnter() {
         clearTimeout();
     }
 
@@ -43,12 +43,12 @@ module.exports = function(boxes) {
 
         // did mouse leave at top of window?
         // add small exception space in the top-right corner
-        if( evt.clientY <= getAddressBarY() && evt.clientX < ( 0.80 * window.innerWidth)) {
-            timeout = window.setTimeout(trigger, 400);
+        if (evt.clientY <= getAddressBarY() && evt.clientX < (0.8 * window.innerWidth)) {
+            timeout = window.setTimeout(trigger, 600);
         }
     }
 
-    function onTouchStart(evt) {
+    function onTouchStart() {
         clearTimeout();
         touchStart = {
             timestamp: performance.now(),

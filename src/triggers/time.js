@@ -1,13 +1,13 @@
 const Timer = require('../timer.js');
 
 module.exports = function(boxes) {
-  let siteTimer = new Timer(0);
-  let pageTimer = new Timer(0);
+  let siteTimer = new Timer();
+  let pageTimer = new Timer();
 
   const timers = {
     start: function() {
         try{
-          var sessionTime = parseInt(sessionStorage.getItem('boxzilla_timer'));
+          let sessionTime = parseInt(sessionStorage.getItem('boxzilla_timer'));
           if (sessionTime) {
             siteTimer.time = sessionTime;
           }
@@ -38,9 +38,7 @@ module.exports = function(boxes) {
     boxes.forEach((box) => {
         if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
             box.trigger();
-        }
-
-        if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
+        } else if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
             box.trigger();
         }
     });

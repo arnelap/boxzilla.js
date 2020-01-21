@@ -1,9 +1,7 @@
-'use strict';
-
 const duration = 320;
 
 function css(element, styles) {
-    for(let property in styles) {
+    for (let property in styles) {
         if (!styles.hasOwnProperty(property)) {
             continue;
         }
@@ -14,7 +12,7 @@ function css(element, styles) {
 
 function initObjectProperties(properties, value) {
     const newObject = {};
-    for(let i=0; i<properties.length; i++) {
+    for (let i=0; i<properties.length; i++) {
         newObject[properties[i]] = value;
     }
     return newObject;
@@ -22,7 +20,7 @@ function initObjectProperties(properties, value) {
 
 function copyObjectProperties(properties, object) {
     const newObject = {};
-    for(let i=0; i<properties.length; i++) {
+    for (let i=0; i<properties.length; i++) {
         newObject[properties[i]] = object[properties[i]];
     }
     return newObject;
@@ -61,7 +59,7 @@ function toggle(element, animation, callbackFn) {
     element.setAttribute('data-animated', "true");
 
     // toggle element visiblity right away if we're making something visible
-    if( ! nowVisible ) {
+    if (! nowVisible) {
         element.style.display = '';
     }
 
@@ -69,16 +67,16 @@ function toggle(element, animation, callbackFn) {
     let visibleStyles;
 
     // animate properties
-    if ( animation === 'slide' ) {
+    if (animation === 'slide') {
         hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
         visibleStyles = {};
 
-        if( ! nowVisible ) {
+        if (! nowVisible) {
             const computedStyles = window.getComputedStyle(element);
             visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles);
 
             // in some browsers, getComputedStyle returns "auto" value. this falls back to getBoundingClientRect() in those browsers since we need an actual height.
-            if(!isFinite(visibleStyles.height)) {
+            if (!isFinite(visibleStyles.height)) {
               const clientRect = element.getBoundingClientRect();
               visibleStyles.height = clientRect.height;
             }
@@ -92,7 +90,7 @@ function toggle(element, animation, callbackFn) {
     } else {
         hiddenStyles = { opacity: 0 };
         visibleStyles = { opacity: 1 };
-        if( ! nowVisible ) {
+        if (! nowVisible) {
             css(element, hiddenStyles);
         }
 
@@ -119,12 +117,12 @@ function animate(element, targetStyles, fn) {
         const current = parseFloat(initialStyles[property]);
 
         // is there something to do?
-        if ( current == to ) {
+        if (current == to) {
             delete targetStyles[property];
             continue;
         }
 
-        propSteps[property] = ( to - current ) / duration; // points per second
+        propSteps[property] = (to - current) / duration; // points per second
         currentStyles[property] = current;
     }
 
@@ -134,7 +132,7 @@ function animate(element, targetStyles, fn) {
         let done = true;
 
         let step, to, increment, newValue;
-        for(let property in targetStyles ) {
+        for (let property in targetStyles ) {
             if (!targetStyles.hasOwnProperty(property)) {
                 continue;
             }
@@ -144,7 +142,7 @@ function animate(element, targetStyles, fn) {
             increment =  step * timeSinceLastTick;
             newValue = currentStyles[property] + increment;
 
-            if( step > 0 && newValue >= to || step < 0 && newValue <= to ) {
+            if ((step > 0 && newValue >= to) || (step < 0 && newValue <= to)) {
                 newValue = to;
             } else {
                 done = false;
@@ -152,16 +150,14 @@ function animate(element, targetStyles, fn) {
 
             // store new value
             currentStyles[property] = newValue;
-
-            const suffix = property !== "opacity" ? "px" : "";
-            element.style[property] = newValue + suffix;
+            element.style[property] = property !== "opacity"  ? newValue + "px" : newValue;
         }
 
         last = +new Date();
 
-        // keep going until we're done for all props
-        if(!done) {
-            (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 32);
+        if (!done) {
+            // keep going until we're done for all props
+            window.requestAnimationFrame(tick);
         } else {
             // call callback
             fn && fn();
@@ -172,7 +168,7 @@ function animate(element, targetStyles, fn) {
 }
 
 module.exports = {
-    'toggle': toggle,
-    'animate': animate,
-    'animated': animated
+    toggle,
+    animate,
+    animated
 };

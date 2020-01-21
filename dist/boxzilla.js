@@ -34,8 +34,6 @@
   return r;
 })()({
   1: [function (require, module, exports) {
-    'use strict';
-
     var duration = 320;
 
     function css(element, styles) {
@@ -198,14 +196,14 @@
 
 
           currentStyles[_property] = newValue;
-          var suffix = _property !== "opacity" ? "px" : "";
-          element.style[_property] = newValue + suffix;
+          element.style[_property] = _property !== "opacity" ? newValue + "px" : newValue;
         }
 
-        last = +new Date(); // keep going until we're done for all props
+        last = +new Date();
 
         if (!done) {
-          window.requestAnimationFrame && requestAnimationFrame(tick) || setTimeout(tick, 32);
+          // keep going until we're done for all props
+          window.requestAnimationFrame(tick);
         } else {
           // call callback
           fn && fn();
@@ -216,9 +214,9 @@
     }
 
     module.exports = {
-      'toggle': toggle,
-      'animate': animate,
-      'animated': animated
+      toggle: toggle,
+      animate: animate,
+      animated: animated
     };
   }, {}],
   2: [function (require, module, exports) {
@@ -783,8 +781,8 @@
     module.exports = styles;
   }, {}],
   5: [function (require, module, exports) {
-    var Timer = function Timer(start) {
-      this.time = start;
+    var Timer = function Timer() {
+      this.time = 0;
       this.interval = 0;
     };
 
@@ -835,7 +833,7 @@
         timeout = null;
       }
 
-      function onMouseEnter(evt) {
+      function onMouseEnter() {
         clearTimeout();
       }
 
@@ -851,12 +849,12 @@
         clearTimeout(); // did mouse leave at top of window?
         // add small exception space in the top-right corner
 
-        if (evt.clientY <= getAddressBarY() && evt.clientX < 0.80 * window.innerWidth) {
-          timeout = window.setTimeout(trigger, 400);
+        if (evt.clientY <= getAddressBarY() && evt.clientX < 0.8 * window.innerWidth) {
+          timeout = window.setTimeout(trigger, 600);
         }
       }
 
-      function onTouchStart(evt) {
+      function onTouchStart() {
         clearTimeout();
         touchStart = {
           timestamp: performance.now(),
@@ -947,8 +945,8 @@
     var Timer = require('../timer.js');
 
     module.exports = function (boxes) {
-      var siteTimer = new Timer(0);
-      var pageTimer = new Timer(0);
+      var siteTimer = new Timer();
+      var pageTimer = new Timer();
       var timers = {
         start: function start() {
           try {
@@ -981,9 +979,7 @@
         boxes.forEach(function (box) {
           if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
             box.trigger();
-          }
-
-          if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
+          } else if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
             box.trigger();
           }
         });
