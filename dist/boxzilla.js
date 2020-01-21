@@ -101,7 +101,7 @@
       }; // store attribute so everyone knows we're animating this element
 
 
-      element.setAttribute('data-animated', "true"); // toggle element visiblity right away if we're making something visible
+      element.setAttribute('data-animated', 'true'); // toggle element visiblity right away if we're making something visible
 
       if (!nowVisible) {
         element.style.display = '';
@@ -111,12 +111,12 @@
       var visibleStyles; // animate properties
 
       if (animation === 'slide') {
-        hiddenStyles = initObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], 0);
+        hiddenStyles = initObjectProperties(['height', 'borderTopWidth', 'borderBottomWidth', 'paddingTop', 'paddingBottom'], 0);
         visibleStyles = {};
 
         if (!nowVisible) {
           var computedStyles = window.getComputedStyle(element);
-          visibleStyles = copyObjectProperties(["height", "borderTopWidth", "borderBottomWidth", "paddingTop", "paddingBottom"], computedStyles); // in some browsers, getComputedStyle returns "auto" value. this falls back to getBoundingClientRect() in those browsers since we need an actual height.
+          visibleStyles = copyObjectProperties(['height', 'borderTopWidth', 'borderBottomWidth', 'paddingTop', 'paddingBottom'], computedStyles); // in some browsers, getComputedStyle returns "auto" value. this falls back to getBoundingClientRect() in those browsers since we need an actual height.
 
           if (!isFinite(visibleStyles.height)) {
             var clientRect = element.getBoundingClientRect();
@@ -162,7 +162,7 @@
         var to = targetStyles[property];
         var current = parseFloat(initialStyles[property]); // is there something to do?
 
-        if (current == to) {
+        if (current === to) {
           delete targetStyles[property];
           continue;
         }
@@ -196,7 +196,7 @@
 
 
           currentStyles[_property] = newValue;
-          element.style[_property] = _property !== "opacity" ? newValue + "px" : newValue;
+          element.style[_property] = _property !== 'opacity' ? newValue + 'px' : newValue;
         }
 
         last = +new Date();
@@ -221,16 +221,16 @@
   }, {}],
   2: [function (require, module, exports) {
     var defaults = {
-      'animation': 'fade',
-      'rehide': false,
-      'content': '',
-      'cookie': null,
-      'icon': '&times',
-      'screenWidthCondition': null,
-      'position': 'center',
-      'testMode': false,
-      'trigger': false,
-      'closable': true
+      animation: 'fade',
+      rehide: false,
+      content: '',
+      cookie: null,
+      icon: '&times',
+      screenWidthCondition: null,
+      position: 'center',
+      testMode: false,
+      trigger: false,
+      closable: true
     };
 
     var Animator = require('./animator.js');
@@ -321,8 +321,8 @@
         this.fireEvent('box.interactions.form', [box, evt.target]);
       }, false);
       this.overlay.addEventListener('click', function (e) {
-        var x = e.offsetX,
-            y = e.offsetY; // calculate if click was less than 40px outside box to avoid closing it by accident
+        var x = e.offsetX;
+        var y = e.offsetY; // calculate if click was less than 40px outside box to avoid closing it by accident
 
         var rect = box.element.getBoundingClientRect();
         var margin = 40; // if click was not anywhere near box, dismiss it.
@@ -344,7 +344,7 @@
       wrapper.appendChild(box);
       var content;
 
-      if (typeof this.config.content === "string") {
+      if (typeof this.config.content === 'string') {
         content = document.createElement('div');
         content.innerHTML = this.config.content;
       } else {
@@ -358,7 +358,7 @@
 
       if (this.config.closable && this.config.icon) {
         var closeIcon = document.createElement('span');
-        closeIcon.className = "boxzilla-close-icon";
+        closeIcon.className = 'boxzilla-close-icon';
         closeIcon.innerHTML = this.config.icon;
         box.appendChild(closeIcon);
         this.closeIcon = closeIcon;
@@ -381,7 +381,7 @@
       var boxHeight = this.element.clientHeight; // add scrollbar to box and limit height
 
       if (boxHeight > windowHeight) {
-        this.element.style.maxHeight = windowHeight + "px";
+        this.element.style.maxHeight = windowHeight + 'px';
         this.element.style.overflowY = 'scroll';
       } // set new top margin for boxes which are centered
 
@@ -389,7 +389,7 @@
       if (this.config.position === 'center') {
         var newTopMargin = (windowHeight - boxHeight) / 2;
         newTopMargin = newTopMargin >= 0 ? newTopMargin : 0;
-        this.element.style.marginTop = newTopMargin + "px";
+        this.element.style.marginTop = newTopMargin + 'px';
       }
 
       this.element.style.display = origDisplay;
@@ -397,8 +397,8 @@
 
 
     Box.prototype.toggle = function (show, animate) {
-      show = typeof show === "undefined" ? !this.visible : show;
-      animate = typeof animate === "undefined" ? true : animate; // is box already at desired visibility?
+      show = typeof show === 'undefined' ? !this.visible : show;
+      animate = typeof animate === 'undefined' ? true : animate; // is box already at desired visibility?
 
       if (show === this.visible) {
         return false;
@@ -425,7 +425,7 @@
         this.overlay.classList.toggle('boxzilla-' + this.id + '-overlay');
 
         if (animate) {
-          Animator.toggle(this.overlay, "fade");
+          Animator.toggle(this.overlay, 'fade');
         } else {
           this.overlay.style.display = show ? '' : 'none';
         }
@@ -437,7 +437,7 @@
             return;
           }
 
-          this.contentElement.innerHTML = this.contentElement.innerHTML;
+          this.contentElement.innerHTML = this.contentElement.innerHTML + "";
         }.bind(this));
       } else {
         this.element.style.display = show ? '' : 'none';
@@ -482,10 +482,10 @@
       }
 
       switch (this.config.screenWidthCondition.condition) {
-        case "larger":
+        case 'larger':
           return window.innerWidth > this.config.screenWidthCondition.value;
 
-        case "smaller":
+        case 'smaller':
           return window.innerWidth < this.config.screenWidthCondition.value;
       } // meh.. condition should be "smaller" or "larger", just return true.
 
@@ -533,8 +533,7 @@
         return false;
       }
 
-      return document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + 'boxzilla_box_' + this.id + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1") === "true";
-      ;
+      return document.cookie.replace(new RegExp('(?:(?:^|.*;)\\s*' + 'boxzilla_box_' + this.id + '\\s*\\=\\s*([^;]*).*$)|^.*$'), '$1') === 'true';
     }; // set cookie that disables automatically showing the box
 
 
@@ -704,7 +703,7 @@
         }
       }
 
-      throw new Error("No box exists with ID " + id);
+      throw new Error('No box exists with ID ' + id);
     } // dismiss a single box (or all by omitting id param)
 
 
@@ -969,7 +968,7 @@
 
       timers.start(); // stop timers when leaving page or switching to other tab
 
-      document.addEventListener("visibilitychange", function () {
+      document.addEventListener('visibilitychange', function () {
         document.hidden ? timers.stop() : timers.start();
       });
       window.addEventListener('beforeunload', function () {
