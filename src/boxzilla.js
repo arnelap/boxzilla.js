@@ -1,6 +1,5 @@
 'use strict';
 
-const Boxzilla = require('./events.js');
 const Box = require('./box.js');
 const util = require('./util.js');
 const styles = require('./styles.js');
@@ -11,10 +10,11 @@ const Time = require('./triggers/time.js');
 
 let initialised = false;
 let boxes = [];
+let listeners = {};
 
 // "keyup" listener
-function onKeyUp(e) {
-    if (e.keyCode === 27) {
+function onKeyUp(evt) {
+    if (evt.keyCode === 27) {
         Boxzilla.dismiss();
     }
 }
@@ -25,10 +25,10 @@ function recalculateHeights() {
 }
 
 function onElementClick(evt) {
-  // find <a> element in up to 3 parent elements
-  var el = evt.target || evt.srcElement;
-  var depth = 3
-  for(var i=0; i<=depth; i++) {
+  let el = evt.target;
+  let depth = 3
+
+  for (let i=0; i<=depth; i++) {
     if(!el || el.tagName === 'A') {
       break;
     }
@@ -49,8 +49,23 @@ function onElementClick(evt) {
   }
 }
 
+function trigger(event, args) {
+    listeners[event] = listeners[event] || [];
+    listeners[event].forEach(f => f.apply(null, args));
+}
+
+function on(event, func) {
+    listeners[event] = listeners[event] || [];
+    listeners[event].push(func);
+}
+
+function off(event, func) {
+    listeners[event] = listeners[event] || [];
+    listeners[event] = listeners[event].filter(f => f !== func)
+}
+
 // initialise & add event listeners
-Boxzilla.init = function() {
+function init() {
     if (initialised) {
         return;
     }
@@ -74,17 +89,9 @@ Boxzilla.init = function() {
    
     Boxzilla.trigger('ready');
     initialised = true; // ensure this function doesn't run again
-};
+}
 
-/**
- * Create a new Box
- *
- * @param string id
- * @param object opts
- *
- * @returns Box
- */
-Boxzilla.create = function(id, opts) {
+function create(id, opts) {
     // preserve backwards compat for minimumScreenWidth option
     if (typeof(opts.minimumScreenWidth) !== "undefined") {
       opts.screenWidthCondition = {
@@ -93,14 +100,14 @@ Boxzilla.create = function(id, opts) {
       }
     }
 
-    const box = new Box(id, opts);
+    const box = new Box(id, opts, trigger);
     boxes.push(box);
     return box;
-};
+}
 
-Boxzilla.get = function(id) {
-    for (var i=0; i<boxes.length; i++) {
-        if (boxes[i].id == id) {
+function get(id) {
+    for (let i=0; i<boxes.length; i++) {
+        if (String(boxes[i].id) === String(id)) {
             return boxes[i];
         }
     }
@@ -110,43 +117,41 @@ Boxzilla.get = function(id) {
 
 
 // dismiss a single box (or all by omitting id param)
-Boxzilla.dismiss = function(id, animate) {
+function dismiss(id, animate) {
     // if no id given, dismiss all current open boxes
     if (id) {
         Boxzilla.get(id).dismiss(animate);
     } else {
         boxes.forEach(box => box.dismiss(animate))
     }
-};
+}
 
-Boxzilla.hide = function(id, animate) {
+function hide(id, animate) {
     if (id) {
         Boxzilla.get(id).hide(animate);
     } else {
         boxes.forEach(box => box.hide(animate))
     }
-};
+}
 
-Boxzilla.show = function(id, animate) {
+function show(id, animate) {
     if (id) {
         Boxzilla.get(id).show(animate);
     } else {
         boxes.forEach(box => box.show(animate))
     }
-};
+}
 
-Boxzilla.toggle = function(id, animate) {
+function toggle(id, animate) {
     if (id) {
         Boxzilla.get(id).toggle(animate);
     } else {
         boxes.forEach(box => box.toggle(animate))
     }
-};
-
-// expose each individual box.
-Boxzilla.boxes = boxes;
+}
 
 // expose boxzilla object
+const Boxzilla = {off, on, get, init, create, trigger, show, hide, dismiss, toggle, boxes};
 window.Boxzilla = Boxzilla;
 
 if (typeof module !== 'undefined' && module.exports) {

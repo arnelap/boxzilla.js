@@ -1,13 +1,12 @@
 function throttle(fn, threshold, scope) {
-    threshold || (threshold = 600);
-    var last;
-    var deferTimer;
+    threshold || (threshold = 800);
+    let last;
+    let deferTimer;
 
     return function() {
-        var context = scope || this;
-
-        var now = +new Date,
-            args = arguments;
+        let context = scope || this;
+        let now = +new Date;
+        let args = arguments;
         if (last && now < last + threshold) {
             // hold on to it
             clearTimeout(deferTimer);
