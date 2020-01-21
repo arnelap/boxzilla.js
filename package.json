@@ -1,6 +1,6 @@
 {
   "name": "boxzilla",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Boxzilla.js is a simple library for creating boxes which can pop-up or slide-in at predefined moments.",
   "main": "./src/boxzilla.js",
   "repository": {
