@@ -593,7 +593,7 @@
 
     var Box = require('./box.js');
 
-    var util = require('./util.js');
+    var throttle = require('./util.js').throttle;
 
     var styles = require('./styles.js');
 
@@ -611,7 +611,7 @@
 
     function onKeyUp(evt) {
       if (evt.keyCode === 27) {
-        Boxzilla.dismiss();
+        dismiss();
       }
     } // recalculate heights and variables based on height
 
@@ -623,10 +623,9 @@
     }
 
     function onElementClick(evt) {
-      var el = evt.target;
-      var depth = 3;
+      var el = evt.target; // bubble up to <a> element
 
-      for (var i = 0; i <= depth; i++) {
+      for (var i = 0; i <= 3; i++) {
         if (!el || el.tagName === 'A') {
           break;
         }
@@ -638,31 +637,27 @@
         return;
       }
 
-      var href = el.href.toLowerCase();
-      var match = href.match(/[#&]boxzilla-(\d+)/);
+      var match = el.href.match(/[#&]boxzilla-(.+)/i);
 
       if (match && match.length > 1) {
-        var boxId = match[1];
-        Boxzilla.toggle(boxId);
+        toggle(match[1]);
       }
     }
 
     function trigger(event, args) {
-      listeners[event] = listeners[event] || [];
-      listeners[event].forEach(function (f) {
+      listeners[event] && listeners[event].forEach(function (f) {
         return f.apply(null, args);
       });
     }
 
-    function on(event, func) {
+    function on(event, fn) {
       listeners[event] = listeners[event] || [];
-      listeners[event].push(func);
+      listeners[event].push(fn);
     }
 
-    function off(event, func) {
-      listeners[event] = listeners[event] || [];
-      listeners[event] = listeners[event].filter(function (f) {
-        return f !== func;
+    function off(event, fn) {
+      listeners[event] && listeners[event].filter(function (f) {
+        return f !== fn;
       });
     } // initialise & add event listeners
 
@@ -674,19 +669,18 @@
 
 
       var styleElement = document.createElement('style');
-      styleElement.setAttribute("type", "text/css");
       styleElement.innerHTML = styles;
-      document.head.appendChild(styleElement); // init exit intent triggershow
+      document.head.appendChild(styleElement); // init triggers
 
       new ExitIntent(boxes);
       new Pageviews(boxes);
       new Scroll(boxes);
       new Time(boxes);
       document.body.addEventListener('click', onElementClick, true);
-      window.addEventListener('resize', util.throttle(recalculateHeights));
+      window.addEventListener('resize', throttle(recalculateHeights));
       window.addEventListener('load', recalculateHeights);
       document.addEventListener('keyup', onKeyUp);
-      Boxzilla.trigger('ready');
+      trigger('ready');
       initialised = true; // ensure this function doesn't run again
     }
 
@@ -718,7 +712,7 @@
     function dismiss(id, animate) {
       // if no id given, dismiss all current open boxes
       if (id) {
-        Boxzilla.get(id).dismiss(animate);
+        get(id).dismiss(animate);
       } else {
         boxes.forEach(function (box) {
           return box.dismiss(animate);
@@ -728,7 +722,7 @@
 
     function hide(id, animate) {
       if (id) {
-        Boxzilla.get(id).hide(animate);
+        get(id).hide(animate);
       } else {
         boxes.forEach(function (box) {
           return box.hide(animate);
@@ -738,7 +732,7 @@
 
     function show(id, animate) {
       if (id) {
-        Boxzilla.get(id).show(animate);
+        get(id).show(animate);
       } else {
         boxes.forEach(function (box) {
           return box.show(animate);
@@ -748,7 +742,7 @@
 
     function toggle(id, animate) {
       if (id) {
-        Boxzilla.get(id).toggle(animate);
+        get(id).toggle(animate);
       } else {
         boxes.forEach(function (box) {
           return box.toggle(animate);
