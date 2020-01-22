@@ -235,12 +235,12 @@
 
     var Animator = require('./animator.js');
     /**
-    * Merge 2 objects, values of the latter overwriting the former.
-    *
-    * @param obj1
-    * @param obj2
-    * @returns {*}
-    */
+     * Merge 2 objects, values of the latter overwriting the former.
+     *
+     * @param obj1
+     * @param obj2
+     * @returns {*}
+     */
 
 
     function merge(obj1, obj2) {
@@ -262,9 +262,9 @@
       return obj3;
     }
     /**
-    * Get the real height of entire document.
-    * @returns {number}
-    */
+     * Get the real height of entire document.
+     * @returns {number}
+     */
 
 
     function getDocumentHeight() {
@@ -437,7 +437,7 @@
             return;
           }
 
-          this.contentElement.innerHTML = this.contentElement.innerHTML + "";
+          this.contentElement.innerHTML = this.contentElement.innerHTML + '';
         }.bind(this));
       } else {
         this.element.style.display = show ? '' : 'none';
@@ -557,10 +557,10 @@
       }
     };
     /**
-    * Dismisses the box and optionally sets a cookie.
-    * @param animate
-    * @returns {boolean}
-    */
+     * Dismisses the box and optionally sets a cookie.
+     * @param animate
+     * @returns {boolean}
+     */
 
 
     Box.prototype.dismiss = function (animate) {
@@ -667,10 +667,10 @@
       styleElement.innerHTML = styles;
       document.head.appendChild(styleElement); // init triggers
 
-      new ExitIntent(boxes);
-      new Pageviews(boxes);
-      new Scroll(boxes);
-      new Time(boxes);
+      ExitIntent(boxes);
+      Pageviews(boxes);
+      Scroll(boxes);
+      Time(boxes);
       document.body.addEventListener('click', onElementClick, true);
       window.addEventListener('resize', throttle(recalculateHeights));
       window.addEventListener('load', recalculateHeights);
@@ -870,7 +870,7 @@
         } // allow a tiny tiny margin for error, to not fire on clicks
 
 
-        if (window.scrollY + 20 >= touchStart.scrollY) {
+        if (window.scrollY + 20 > touchStart.scrollY) {
           return;
         }
 
@@ -905,7 +905,7 @@
 
       window.setTimeout(function () {
         boxes.forEach(function (box) {
-          if (box.config.trigger.method === 'pageviews' && pageviews >= box.config.trigger.value && box.mayAutoShow()) {
+          if (box.config.trigger.method === 'pageviews' && pageviews > box.config.trigger.value && box.mayAutoShow()) {
             box.trigger();
           }
         });
@@ -976,9 +976,9 @@
       });
       window.setInterval(function () {
         boxes.forEach(function (box) {
-          if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
+          if (box.config.trigger.method === 'time_on_site' && siteTimer.time > box.config.trigger.value && box.mayAutoShow()) {
             box.trigger();
-          } else if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
+          } else if (box.config.trigger.method === 'time_on_page' && pageTimer.time > box.config.trigger.value && box.mayAutoShow()) {
             box.trigger();
           }
         });

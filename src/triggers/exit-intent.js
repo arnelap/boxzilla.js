@@ -66,11 +66,11 @@ module.exports = function (boxes) {
     }
 
     // allow a tiny tiny margin for error, to not fire on clicks
-    if ((window.scrollY + 20) >= touchStart.scrollY) {
+    if ((window.scrollY + 20) > touchStart.scrollY) {
       return
     }
 
-    if (performance.now() - touchStart.timestamp > 300) {
+    if ((performance.now() - touchStart.timestamp) > 300) {
       return
     }
 

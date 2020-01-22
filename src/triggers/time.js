@@ -36,9 +36,9 @@ module.exports = function (boxes) {
 
   window.setInterval(() => {
     boxes.forEach((box) => {
-      if (box.config.trigger.method === 'time_on_site' && siteTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
+      if (box.config.trigger.method === 'time_on_site' && siteTimer.time > box.config.trigger.value && box.mayAutoShow()) {
         box.trigger()
-      } else if (box.config.trigger.method === 'time_on_page' && pageTimer.time >= box.config.trigger.value && box.mayAutoShow()) {
+      } else if (box.config.trigger.method === 'time_on_page' && pageTimer.time > box.config.trigger.value && box.mayAutoShow()) {
         box.trigger()
       }
     })

@@ -10,7 +10,7 @@ module.exports = function (boxes) {
 
   window.setTimeout(() => {
     boxes.forEach((box) => {
-      if (box.config.trigger.method === 'pageviews' && pageviews >= box.config.trigger.value && box.mayAutoShow()) {
+      if (box.config.trigger.method === 'pageviews' && pageviews > box.config.trigger.value && box.mayAutoShow()) {
         box.trigger()
       }
     })
