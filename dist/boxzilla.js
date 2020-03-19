@@ -313,16 +313,16 @@
 
       this.element.addEventListener('click', function (evt) {
         if (evt.target.tagName === 'A') {
-          this.fireEvent('box.interactions.link', [box, evt.target]);
+          box.fireEvent('box.interactions.link', [box, evt.target]);
         }
       }, false);
       this.element.addEventListener('submit', function (evt) {
         box.setCookie();
-        this.fireEvent('box.interactions.form', [box, evt.target]);
+        box.fireEvent('box.interactions.form', [box, evt.target]);
       }, false);
-      this.overlay.addEventListener('click', function (e) {
-        var x = e.offsetX;
-        var y = e.offsetY; // calculate if click was less than 40px outside box to avoid closing it by accident
+      this.overlay.addEventListener('click', function (evt) {
+        var x = evt.offsetX;
+        var y = evt.offsetY; // calculate if click was less than 40px outside box to avoid closing it by accident
 
         var rect = box.element.getBoundingClientRect();
         var margin = 40; // if click was not anywhere near box, dismiss it.

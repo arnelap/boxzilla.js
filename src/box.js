@@ -87,32 +87,36 @@ Box.prototype.events = function () {
 
   // attach event to "close" icon inside box
   if (this.closeIcon) {
-    this.closeIcon.addEventListener('click', function (evt) {
+    this.closeIcon.addEventListener('click', (evt) => {
       evt.preventDefault()
       box.dismiss()
     })
   }
 
-  this.element.addEventListener('click', function (evt) {
+  this.element.addEventListener('click', (evt) => {
     if (evt.target.tagName === 'A') {
-      this.fireEvent('box.interactions.link', [box, evt.target])
+      box.fireEvent('box.interactions.link', [box, evt.target])
     }
   }, false)
 
-  this.element.addEventListener('submit', function (evt) {
+  this.element.addEventListener('submit', (evt) => {
     box.setCookie()
-    this.fireEvent('box.interactions.form', [box, evt.target])
+    box.fireEvent('box.interactions.form', [box, evt.target])
   }, false)
 
-  this.overlay.addEventListener('click', function (e) {
-    const x = e.offsetX; const y = e.offsetY
+  this.overlay.addEventListener('click', (evt) => {
+    const x = evt.offsetX; 
+    const y = evt.offsetY
 
     // calculate if click was less than 40px outside box to avoid closing it by accident
     const rect = box.element.getBoundingClientRect()
     const margin = 40
 
     // if click was not anywhere near box, dismiss it.
-    if (x < (rect.left - margin) || x > (rect.right + margin) || y < (rect.top - margin) || y > (rect.bottom + margin)) {
+    if (x < (rect.left - margin) 
+      || x > (rect.right + margin) 
+      || y < (rect.top - margin) 
+      || y > (rect.bottom + margin)) {
       box.dismiss()
     }
   })
