@@ -105,7 +105,7 @@ Box.prototype.events = function () {
   }, false)
 
   this.overlay.addEventListener('click', (evt) => {
-    const x = evt.offsetX;
+    const x = evt.offsetX
     const y = evt.offsetY
 
     // calculate if click was less than 40px outside box to avoid closing it by accident
@@ -113,10 +113,10 @@ Box.prototype.events = function () {
     const margin = 40
 
     // if click was not anywhere near box, dismiss it.
-    if (x < (rect.left - margin)
-      || x > (rect.right + margin)
-      || y < (rect.top - margin)
-      || y > (rect.bottom + margin)) {
+    if (x < (rect.left - margin) ||
+      x > (rect.right + margin) ||
+      y < (rect.top - margin) ||
+      y > (rect.bottom + margin)) {
       box.dismiss()
     }
   })
@@ -150,7 +150,7 @@ Box.prototype.dom = function () {
     const closeIcon = document.createElement('span')
     closeIcon.className = 'boxzilla-close-icon'
     closeIcon.innerHTML = this.config.icon
-	closeIcon.setAttribute('aria-label', 'close')
+    closeIcon.setAttribute('aria-label', 'close')
     box.appendChild(closeIcon)
     this.closeIcon = closeIcon
   }

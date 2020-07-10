@@ -360,6 +360,7 @@
         var closeIcon = document.createElement('span');
         closeIcon.className = 'boxzilla-close-icon';
         closeIcon.innerHTML = this.config.icon;
+        closeIcon.setAttribute('aria-label', 'close');
         box.appendChild(closeIcon);
         this.closeIcon = closeIcon;
       }
