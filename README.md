@@ -1,6 +1,6 @@
 # Boxzilla.js
 
-Boxzilla.js is a simple lightweight JavaScript library for creating boxes which can pop-up or slide-in at predefined moments. It's just a single script coming in at 14kb (minified) with no other dependencies.
+Boxzilla.js is a simple lightweight JavaScript library for creating boxes which can pop-up or slide-in at predefined moments. It's just a single script coming in at 4 kB kB (minified, gzipped) with no other dependencies.
 
 This is the script powering the [Boxzilla plugin for WordPress](https://boxzillaplugin.com/).
 

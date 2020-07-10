@@ -19,8 +19,6 @@
     <p><a href="#boxzilla-get-started-box">#boxzilla-get-started-box</a></p>
     <p><a href="javascript:Boxzilla.show('get-started-box');">Boxzilla.show('get-started-box');</a></p>
 
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/N7_a156S5lk" frameborder="0" allowfullscreen></iframe>
-
     <h3>Donec id metus velit</h3>
     <p>Donec id metus velit. Maecenas eleifend interdum eros, non mattis ligula. Cras tincidunt ullamcorper sapien ut pretium. Fusce vel velit laoreet, fermentum ipsum ut, lobortis nisi. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Integer posuere felis sit amet tortor auctor, id ornare massa finibus. Cras sed elementum tellus, ut pretium felis. Nam at nunc eu magna imperdiet convallis eu quis lorem.</p>
     <p>Integer hendrerit pellentesque mattis. Fusce porta nisl lorem, quis ultricies velit vulputate non. Quisque volutpat nunc vitae felis lacinia fermentum. Aliquam aliquam, arcu ac consequat posuere, dolor elit sodales turpis, molestie congue urna diam sit amet risus. Proin malesuada bibendum tortor, ac consectetur diam. Proin cursus ligula vitae dui efficitur rhoncus. Duis finibus ac lorem eget hendrerit. Donec eleifend eget diam sit amet lacinia. Praesent ultricies ex nec nisi ullamcorper placerat. Vestibulum tempor vitae tortor at sodales. Maecenas egestas faucibus ullamcorper. Donec vitae fringilla augue, sit amet vehicula diam. Pellentesque sit amet lectus diam. Donec aliquam, lectus tempus blandit vehicula, velit quam commodo dolor, nec pellentesque sem lectus a ante. Proin maximus, ipsum nec suscipit viverra, diam sapien luctus enim, sed condimentum quam lorem ac tellus. </p>
@@ -34,8 +32,7 @@
     <h4>You're looking at Boxzilla!</h4>
     <p>Live action! And it's super easy to get this on <strong>your site</strong>.</p>
     <p><a class="button" href="/pricing/">Get Started</a></p>
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/N7_a156S5lk" frameborder="0" allowfullscreen></iframe>
- </div>
+</div>
   <script src="../dist/boxzilla.js"></script>
   <script>
     Boxzilla.init();
@@ -44,6 +41,10 @@
         trigger: {
             method: 'percentage',
             value: 60
+        },
+        screenWidthCondition: {
+          condition: "smaller",
+          value: 600,
         },
         position: "bottom-right"
     });
