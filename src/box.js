@@ -94,7 +94,7 @@ Box.prototype.events = function () {
   }
 
   this.element.addEventListener('click', (evt) => {
-    if (evt.target.tagName === 'A') {
+    if (evt.target.tagName === 'A' || evt.target.tagName === 'AREA') {
       box.fireEvent('box.interactions.link', [box, evt.target])
     }
   }, false)

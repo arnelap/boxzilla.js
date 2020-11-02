@@ -21,17 +21,17 @@ function recalculateHeights () {
 }
 
 function onElementClick (evt) {
-  // bubble up to <a> element
+  // bubble up to <a> or <area> element
   let el = evt.target
   for (let i = 0; i <= 3; i++) {
-    if (!el || el.tagName === 'A') {
+    if (!el || el.tagName === 'A' || el.tagName === 'AREA') {
       break
     }
 
     el = el.parentElement
   }
 
-  if (!el || el.tagName !== 'A' || !el.href) {
+  if (!el || (el.tagName !== 'A' && el.tagName !== 'AREA') || !el.href) {
     return
   }
 
