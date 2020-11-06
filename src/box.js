@@ -254,7 +254,7 @@ Box.prototype.hide = function (animate) {
 
 // calculate trigger height
 Box.prototype.calculateTriggerHeight = function () {
-  let triggerHeight = 0
+  let triggerHeight = {show: 0, hide: 0}
 
   if (this.config.trigger) {
     if (this.config.trigger.method === 'element') {
@@ -262,15 +262,29 @@ Box.prototype.calculateTriggerHeight = function () {
 
       if (triggerElement) {
         const offset = triggerElement.getBoundingClientRect()
-        triggerHeight = offset.top
+        triggerHeight.show = offset.top
       }
     } else if (this.config.trigger.method === 'percentage') {
-      triggerHeight = (this.config.trigger.value / 100 * getDocumentHeight())
+      triggerHeight.show = (this.config.trigger.value / 100 * getDocumentHeight())
+    }
+  }
+  if (this.config.trigger_hide) {
+    if (this.config.trigger_hide.method === 'element') {
+      const trigger_hide_Element = document.body.querySelector(this.config.trigger_hide.value)
+
+      if (trigger_hide_Element) {
+        const offset = trigger_hide_Element.getBoundingClientRect()
+        triggerHeight.hide = offset.top
+      }
+    } else if (this.config.trigger_hide.method === 'percentage') {
+      triggerHeight.hide = (this.config.trigger_hide.value / 100 * getDocumentHeight())
     }
   }
 
   return triggerHeight
 }
+
+
 
 Box.prototype.fits = function () {
   if (!this.config.screenWidthCondition || !this.config.screenWidthCondition.value) {
