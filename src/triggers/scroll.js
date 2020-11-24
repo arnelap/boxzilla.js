@@ -7,7 +7,6 @@ module.exports = function (boxes) {
     scrollY = scrollY + window.innerHeight * 0.9
 
     boxes.forEach((box) => {
-      //console.log("Hide at" + box.triggerHeight.hide)
       if (!box.mayAutoShow() || box.triggerHeight.show <= 0) {
         return
       }

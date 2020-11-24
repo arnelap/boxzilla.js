@@ -46,6 +46,10 @@ The following configuration values are accepted as the second argument for the `
         'method': 'percentage',       // "time_on_site", "time_on_page", "exit_intent", "element" or "percentage"
         'value':   65                 // integer or string selector
     },
+    'triggerHide': {                // false or object
+        'method': 'percentage',       // "element" or "percentage"
+        'value':   95                 // integer or string selector
+    },
     'icon': '&times',           // string, close icon character
     'animation': 'fade',        // "fade" or "slide"
     'cookie': {

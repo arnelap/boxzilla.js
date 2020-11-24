@@ -268,16 +268,16 @@ Box.prototype.calculateTriggerHeight = function () {
       triggerHeight.show = (this.config.trigger.value / 100 * getDocumentHeight())
     }
   }
-  if (this.config.trigger_hide) {
-    if (this.config.trigger_hide.method === 'element') {
-      const trigger_hide_Element = document.body.querySelector(this.config.trigger_hide.value)
+  if (this.config.triggerHide) {
+    if (this.config.triggerHide.method === 'element') {
+      const triggerHideElement = document.body.querySelector(this.config.triggerHide.value)
 
-      if (trigger_hide_Element) {
-        const offset = trigger_hide_Element.getBoundingClientRect()
+      if (triggerHideElement) {
+        const offset = triggerHideElement.getBoundingClientRect()
         triggerHeight.hide = offset.top
       }
-    } else if (this.config.trigger_hide.method === 'percentage') {
-      triggerHeight.hide = (this.config.trigger_hide.value / 100 * getDocumentHeight())
+    } else if (this.config.triggerHide.method === 'percentage') {
+      triggerHeight.hide = (this.config.triggerHide.value / 100 * getDocumentHeight())
     }
   }
 

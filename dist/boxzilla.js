@@ -477,17 +477,17 @@
         }
       }
 
-      if (this.config.trigger_hide) {
-        if (this.config.trigger_hide.method === 'element') {
-          var trigger_hide_Element = document.body.querySelector(this.config.trigger_hide.value);
+      if (this.config.triggerHide) {
+        if (this.config.triggerHide.method === 'element') {
+          var triggerHideElement = document.body.querySelector(this.config.triggerHide.value);
 
-          if (trigger_hide_Element) {
-            var _offset = trigger_hide_Element.getBoundingClientRect();
+          if (triggerHideElement) {
+            var _offset = triggerHideElement.getBoundingClientRect();
 
             triggerHeight.hide = _offset.top;
           }
-        } else if (this.config.trigger_hide.method === 'percentage') {
-          triggerHeight.hide = this.config.trigger_hide.value / 100 * getDocumentHeight();
+        } else if (this.config.triggerHide.method === 'percentage') {
+          triggerHeight.hide = this.config.triggerHide.value / 100 * getDocumentHeight();
         }
       }
 
@@ -939,7 +939,6 @@
         var scrollY = window.hasOwnProperty('pageYOffset') ? window.pageYOffset : window.scrollTop;
         scrollY = scrollY + window.innerHeight * 0.9;
         boxes.forEach(function (box) {
-          //console.log("Hide at" + box.triggerHeight.hide)
           if (!box.mayAutoShow() || box.triggerHeight.show <= 0) {
             return;
           }
